@@ -1,0 +1,1400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <title>Known — Interlachen Country Club</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Known — Interlachen">
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
+  <link rel="apple-touch-icon" sizes="152x152" href="/icons/apple-touch-icon-152.png">
+  <link rel="apple-touch-icon" sizes="120x120" href="/icons/apple-touch-icon-120.png">
+  <meta name="theme-color" content="#0d2b1a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="msapplication-TileColor" content="#0d2b1a">
+
+  <style>
+    :root {
+      --green-900: #0d2b1a;
+      --green-800: #1B4332;
+      --green-700: #2d6a4f;
+      --green-600: #40916c;
+      --gold:       #C9A84C;
+      --gold-light: #e8c975;
+      --white:      #ffffff;
+      --gray-100:   #f8f9fa;
+      --gray-400:   #9ca3af;
+      --gray-600:   #4b5563;
+      --red:        #ef4444;
+      --green-ok:   #22c55e;
+      --card-bg:    rgba(255,255,255,0.05);
+      --card-border:rgba(201,168,76,0.25);
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--green-900);
+      color: var(--white);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      overflow: hidden;
+    }
+
+    /* ─── PASSWORD GATE ─────────────────────────── */
+    #password-gate {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(155deg, #0d2b1a 0%, #061610 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 2rem;
+    }
+    #password-gate.hidden { display: none; }
+
+    .gate-emblem {
+      width: 88px;
+      height: 88px;
+      border-radius: 50%;
+      background: var(--green-800);
+      border: 2px solid var(--gold);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 0 40px rgba(201,168,76,0.15);
+    }
+    .gate-emblem svg { width: 48px; height: 48px; }
+
+    .gate-title {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      text-align: center;
+      margin-bottom: 0.35rem;
+    }
+    .gate-sub {
+      font-size: 0.75rem;
+      color: var(--gold);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin-bottom: 2.5rem;
+      text-align: center;
+    }
+
+    .gate-form {
+      width: 100%;
+      max-width: 300px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.875rem;
+    }
+    .gate-label {
+      font-size: 0.7rem;
+      color: var(--gray-400);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 0.3rem;
+      display: block;
+    }
+    #pw-input {
+      width: 100%;
+      padding: 0.875rem;
+      background: rgba(255,255,255,0.07);
+      border: 1.5px solid rgba(255,255,255,0.12);
+      border-radius: 12px;
+      color: var(--white);
+      font-size: 2rem;
+      letter-spacing: 0.6em;
+      text-align: center;
+      outline: none;
+      transition: border-color 0.2s;
+      -webkit-text-security: disc;
+    }
+    #pw-input:focus { border-color: var(--gold); }
+    #pw-input.shake {
+      border-color: var(--red);
+      animation: shake 0.45s ease;
+    }
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      15%      { transform: translateX(-10px); }
+      35%      { transform: translateX(10px); }
+      55%      { transform: translateX(-7px); }
+      75%      { transform: translateX(7px); }
+    }
+
+    #pw-submit {
+      width: 100%;
+      padding: 0.9rem;
+      background: var(--gold);
+      color: var(--green-900);
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 800;
+      cursor: pointer;
+      letter-spacing: 0.04em;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    #pw-submit:active { transform: scale(0.97); opacity: 0.9; }
+
+    #pw-error {
+      text-align: center;
+      color: var(--red);
+      font-size: 0.82rem;
+      min-height: 1.1em;
+    }
+
+    /* ─── MAIN APP ──────────────────────────────── */
+    #app {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      max-width: 520px;
+      margin: 0 auto;
+    }
+    #app.hidden { display: none; }
+
+    /* Header */
+    .app-header {
+      flex-shrink: 0;
+      padding-top: calc(env(safe-area-inset-top, 0px) + 12px);
+      padding-left: 1rem;
+      padding-right: 1rem;
+      background: var(--green-900);
+      border-bottom: 1px solid var(--card-border);
+    }
+    .header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 0.75rem;
+    }
+    .header-brand-known {
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: var(--gold);
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+    .header-brand-club {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--white);
+      line-height: 1.25;
+    }
+    .header-count {
+      font-size: 0.72rem;
+      color: var(--gray-400);
+      text-align: right;
+    }
+
+    /* Mode tabs */
+    .mode-tabs {
+      display: flex;
+    }
+    .mode-tab {
+      flex: 1;
+      padding: 0.65rem 0.25rem;
+      background: none;
+      border: none;
+      border-bottom: 2.5px solid transparent;
+      color: var(--gray-400);
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .mode-tab.active {
+      color: var(--gold);
+      border-bottom-color: var(--gold);
+    }
+
+    /* Content area */
+    .content-area {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 1.1rem 1rem;
+    }
+
+    .mode-section { display: none; }
+    .mode-section.active {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100%;
+    }
+
+    /* ─── MEMBER PHOTO ──────────────────────────── */
+    .photo-wrap {
+      position: relative;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 3px solid var(--gold);
+      background: var(--green-800);
+      flex-shrink: 0;
+    }
+    .photo-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .photo-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      color: var(--gray-400);
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    .photo-placeholder svg {
+      width: 40%;
+      height: 40%;
+      opacity: 0.45;
+    }
+
+    /* ─── QUIZ ──────────────────────────────────── */
+    .quiz-progress {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      margin-bottom: 1.25rem;
+    }
+    .quiz-score-txt {
+      font-size: 0.78rem;
+      color: var(--gray-400);
+      white-space: nowrap;
+    }
+    .quiz-score-txt span { color: var(--gold); font-weight: 700; }
+    .progress-bar {
+      flex: 1;
+      height: 4px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 2px;
+      margin: 0 0.75rem;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--gold);
+      border-radius: 2px;
+      transition: width 0.3s ease;
+    }
+
+    .quiz-prompt {
+      font-size: 0.8rem;
+      color: var(--gray-400);
+      letter-spacing: 0.05em;
+      margin: 0.9rem 0 1.1rem;
+    }
+
+    .options-list {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+    .opt-btn {
+      width: 100%;
+      padding: 0.85rem 1.1rem;
+      background: var(--card-bg);
+      border: 1.5px solid var(--card-border);
+      border-radius: 14px;
+      color: var(--white);
+      font-size: 0.92rem;
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      transition: background 0.12s, border-color 0.12s;
+    }
+    .opt-btn:active { transform: scale(0.985); }
+    .opt-letter {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.72rem;
+      font-weight: 800;
+      color: var(--gray-400);
+      flex-shrink: 0;
+    }
+    .opt-btn.correct   { background: rgba(34,197,94,0.15);  border-color: var(--green-ok); }
+    .opt-btn.wrong     { background: rgba(239,68,68,0.15);   border-color: var(--red); }
+    .opt-btn.reveal    { background: rgba(34,197,94,0.12);  border-color: var(--green-ok); }
+    .opt-btn.correct .opt-letter { background: var(--green-ok); color: #fff; }
+    .opt-btn.wrong    .opt-letter { background: var(--red);      color: #fff; }
+    .opt-btn.reveal   .opt-letter { background: var(--green-ok); color: #fff; }
+
+    .continue-btn {
+      margin-top: 1.25rem;
+      width: 100%;
+      padding: 0.85rem;
+      background: transparent;
+      border: 1.5px solid var(--gold);
+      border-radius: 14px;
+      color: var(--gold);
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.05em;
+      transition: background 0.15s;
+    }
+    .continue-btn:active { background: rgba(201,168,76,0.12); }
+
+    /* ─── END / SCORE SCREEN ────────────────────── */
+    .score-end {
+      text-align: center;
+      padding: 3rem 1rem;
+      width: 100%;
+    }
+    .score-pct {
+      font-size: 4.5rem;
+      font-weight: 900;
+      color: var(--gold);
+      line-height: 1;
+    }
+    .score-sub {
+      font-size: 1rem;
+      color: var(--gray-400);
+      margin: 0.5rem 0 2rem;
+    }
+    .restart-btn {
+      padding: 0.9rem 2.5rem;
+      background: var(--gold);
+      color: var(--green-900);
+      border: none;
+      border-radius: 14px;
+      font-size: 1rem;
+      font-weight: 800;
+      cursor: pointer;
+      letter-spacing: 0.04em;
+    }
+
+    /* ─── RECALL ────────────────────────────────── */
+    .recall-hint {
+      font-size: 0.8rem;
+      color: var(--gray-400);
+      letter-spacing: 0.05em;
+      margin-bottom: 1.1rem;
+      text-align: center;
+    }
+    .recall-name-block {
+      text-align: center;
+      margin-top: 1rem;
+    }
+    .recall-name {
+      font-size: 1.45rem;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      margin-bottom: 0.2rem;
+    }
+    .recall-detail {
+      font-size: 0.82rem;
+      color: var(--gold);
+      margin-bottom: 0.4rem;
+    }
+    .recall-notes {
+      font-size: 0.78rem;
+      color: var(--gray-400);
+      line-height: 1.5;
+    }
+
+    /* ─── LISTS ─────────────────────────────────── */
+    #lists-section { align-items: stretch; }
+
+    .lists-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      margin-bottom: 1rem;
+    }
+    .lists-title-txt {
+      font-size: 1rem;
+      font-weight: 800;
+    }
+    .new-list-btn {
+      padding: 0.45rem 0.9rem;
+      background: var(--gold);
+      color: var(--green-900);
+      border: none;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      font-weight: 800;
+      cursor: pointer;
+      letter-spacing: 0.04em;
+    }
+
+    .list-card {
+      background: var(--card-bg);
+      border: 1.5px solid var(--card-border);
+      border-radius: 14px;
+      padding: 1rem;
+      margin-bottom: 0.75rem;
+      cursor: pointer;
+      transition: border-color 0.15s;
+      width: 100%;
+    }
+    .list-card:active { border-color: var(--gold); }
+    .list-card-name { font-size: 1rem; font-weight: 700; margin-bottom: 0.2rem; }
+    .list-card-meta { font-size: 0.78rem; color: var(--gray-400); margin-bottom: 0.5rem; }
+    .box-badges { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+    .box-badge {
+      padding: 0.18rem 0.5rem;
+      border-radius: 6px;
+      font-size: 0.68rem;
+      font-weight: 700;
+    }
+    .box-badge.b1 { background: rgba(239,68,68,0.2);  color: #f87171; }
+    .box-badge.b2 { background: rgba(234,179,8,0.2);  color: #fbbf24; }
+    .box-badge.b3 { background: rgba(34,197,94,0.2);  color: #4ade80; }
+
+    .empty-state {
+      text-align: center;
+      color: var(--gray-400);
+      padding: 3rem 1rem;
+      width: 100%;
+    }
+    .empty-state svg { width: 48px; height: 48px; opacity: 0.25; margin-bottom: 0.75rem; display: block; margin-left: auto; margin-right: auto; }
+
+    /* Study session back bar */
+    .study-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      width: 100%;
+      margin-bottom: 1.25rem;
+    }
+    .back-btn {
+      background: none;
+      border: none;
+      color: var(--gold);
+      font-size: 0.88rem;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 0;
+    }
+    .study-bar-title { font-size: 0.95rem; font-weight: 700; }
+
+    /* ─── MODAL ─────────────────────────────────── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.65);
+      z-index: 800;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+    }
+    .modal-overlay.hidden { display: none; }
+    .modal-sheet {
+      background: var(--green-900);
+      border-top: 1px solid var(--card-border);
+      border-radius: 22px 22px 0 0;
+      padding: 1.25rem 1.25rem calc(env(safe-area-inset-bottom, 0px) + 1.5rem);
+      max-height: 85vh;
+      overflow-y: auto;
+    }
+    .modal-handle {
+      width: 38px;
+      height: 4px;
+      background: rgba(255,255,255,0.18);
+      border-radius: 2px;
+      margin: 0 auto 1.25rem;
+    }
+    .modal-title { font-size: 1.05rem; font-weight: 800; margin-bottom: 0.9rem; }
+    .modal-field-label {
+      font-size: 0.7rem;
+      color: var(--gray-400);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 0.35rem;
+      display: block;
+    }
+    .modal-input {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      background: rgba(255,255,255,0.07);
+      border: 1.5px solid rgba(255,255,255,0.13);
+      border-radius: 10px;
+      color: var(--white);
+      font-size: 1rem;
+      outline: none;
+      margin-bottom: 1rem;
+    }
+    .modal-input:focus { border-color: var(--gold); }
+    .modal-input::placeholder { color: var(--gray-600); }
+
+    .member-picker {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    .picker-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 0.6rem;
+      background: var(--card-bg);
+      border: 1.5px solid var(--card-border);
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 0.78rem;
+      line-height: 1.25;
+      transition: border-color 0.12s;
+    }
+    .picker-item.selected {
+      border-color: var(--gold);
+      background: rgba(201,168,76,0.1);
+    }
+    .picker-thumb {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: var(--green-800);
+      flex-shrink: 0;
+    }
+    .picker-thumb-ph {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--green-800);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .picker-thumb-ph svg { width: 16px; height: 16px; opacity: 0.4; }
+
+    .modal-actions { display: flex; gap: 0.75rem; }
+    .modal-btn {
+      flex: 1;
+      padding: 0.75rem;
+      border: none;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .modal-btn.primary { background: var(--gold); color: var(--green-900); }
+    .modal-btn.ghost   { background: rgba(255,255,255,0.09); color: var(--white); }
+
+    /* ─── TOAST ─────────────────────────────────── */
+    #toast-area {
+      position: fixed;
+      bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem);
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      pointer-events: none;
+    }
+    .toast-pill {
+      background: rgba(13,43,26,0.95);
+      border: 1px solid var(--gold);
+      color: var(--white);
+      padding: 0.55rem 1.2rem;
+      border-radius: 100px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      white-space: nowrap;
+      animation: toastIn 0.2s ease, toastOut 0.3s ease 2.4s forwards;
+    }
+    @keyframes toastIn  { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes toastOut { from { opacity:1; } to { opacity:0; } }
+
+    /* ─── A2HS BANNER ───────────────────────────── */
+    #a2hs-banner {
+      position: fixed;
+      bottom: calc(env(safe-area-inset-bottom, 0px) + 0.875rem);
+      left: 1rem;
+      right: 1rem;
+      background: var(--green-800);
+      border: 1.5px solid var(--gold);
+      border-radius: 18px;
+      padding: 1rem;
+      z-index: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.875rem;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      animation: slideUp 0.3s ease;
+    }
+    #a2hs-banner.hidden { display: none; }
+    @keyframes slideUp { from { transform: translateY(100%); opacity:0; } to { transform: translateY(0); opacity:1; } }
+    .a2hs-icon-wrap {
+      width: 46px;
+      height: 46px;
+      background: var(--gold);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .a2hs-icon-wrap svg { width: 24px; height: 24px; fill: var(--green-900); }
+    .a2hs-body { flex: 1; }
+    .a2hs-title { font-size: 0.88rem; font-weight: 800; margin-bottom: 0.2rem; }
+    .a2hs-desc  { font-size: 0.73rem; color: var(--gray-400); line-height: 1.4; }
+    .a2hs-close {
+      background: none;
+      border: none;
+      color: var(--gray-400);
+      font-size: 1.1rem;
+      cursor: pointer;
+      padding: 4px;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ─── PASSWORD GATE ────────────────────────────── -->
+<div id="password-gate">
+  <div class="gate-emblem">
+    <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <line x1="12" y1="6" x2="12" y2="36" stroke="#C9A84C" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M12 7 L28 12 L12 17 Z" fill="#C9A84C"/>
+      <ellipse cx="20" cy="33" rx="10" ry="2.5" fill="rgba(201,168,76,0.25)"/>
+    </svg>
+  </div>
+  <div class="gate-title">Interlachen Country Club</div>
+  <div class="gate-sub">Member Recognition — Staff Portal</div>
+
+  <div class="gate-form">
+    <div>
+      <label class="gate-label" for="pw-input">Access Code</label>
+      <input type="text" id="pw-input" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="••••" autocomplete="off" spellcheck="false">
+    </div>
+    <button id="pw-submit">Enter →</button>
+    <div id="pw-error"></div>
+  </div>
+</div>
+
+<!-- ─── MAIN APP ─────────────────────────────────── -->
+<div id="app" class="hidden">
+  <div class="app-header">
+    <div class="header-row">
+      <div>
+        <div class="header-brand-known">Known</div>
+        <div class="header-brand-club">Interlachen Country Club</div>
+      </div>
+      <div class="header-count">Top 40 Members</div>
+    </div>
+    <div class="mode-tabs">
+      <button class="mode-tab active" data-mode="quiz">Quiz</button>
+      <button class="mode-tab" data-mode="recall">Recall</button>
+      <button class="mode-tab" data-mode="lists">Lists</button>
+    </div>
+  </div>
+
+  <div class="content-area">
+    <div id="quiz-section"   class="mode-section active"></div>
+    <div id="recall-section" class="mode-section"></div>
+    <div id="lists-section"  class="mode-section"></div>
+  </div>
+</div>
+
+<!-- ─── CREATE LIST MODAL ────────────────────────── -->
+<div id="create-list-modal" class="modal-overlay hidden">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Create New List</div>
+    <label class="modal-field-label">List Name</label>
+    <input type="text" class="modal-input" id="list-name-input" placeholder="e.g. Board of Directors">
+    <label class="modal-field-label" style="margin-bottom:0.5rem;">Select Members</label>
+    <div class="member-picker" id="member-picker"></div>
+    <div class="modal-actions">
+      <button class="modal-btn ghost" id="modal-cancel">Cancel</button>
+      <button class="modal-btn primary" id="modal-save">Create List</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── TOAST AREA ───────────────────────────────── -->
+<div id="toast-area"></div>
+
+<!-- ─── A2HS BANNER ──────────────────────────────── -->
+<div id="a2hs-banner" class="hidden">
+  <div class="a2hs-icon-wrap">
+    <svg viewBox="0 0 24 24"><path d="M17 1H7a2 2 0 00-2 2v18a2 2 0 002 2h10a2 2 0 002-2V3a2 2 0 00-2-2zm-5 20a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm5-4H7V4h10v13z"/></svg>
+  </div>
+  <div class="a2hs-body">
+    <div class="a2hs-title">Add to Home Screen</div>
+    <div class="a2hs-desc" id="a2hs-desc">Tap <strong>Share</strong> then <strong>"Add to Home Screen"</strong> for the best experience.</div>
+  </div>
+  <button class="a2hs-close" id="a2hs-close" aria-label="Dismiss">&#x2715;</button>
+</div>
+
+<script>
+// ────────────────────────────────────────────────────
+// MEMBERS DATA — Top 40 by rounds played at Interlachen
+// ────────────────────────────────────────────────────
+var MEMBERS = [
+  { id:1,  name:"Andrew Tufford",     g:"men",   p:10, hcp:4.2,  rounds:89, note:"Low-handicap regular; prefers 6:30 AM tee. Competes in club championship. Member since 2008." },
+  { id:2,  name:"Keith Carnish",      g:"men",   p:15, hcp:8.1,  rounds:82, note:"Saturday morning regular. Strong iron player. Plays with the Wednesday group. Member since 2011." },
+  { id:3,  name:"Helenbeth Reynolds", g:"women", p:5,  hcp:14.5, rounds:78, note:"Ladies League captain. Plays Tuesdays and Thursdays. Organized the spring invitational. Member since 2005." },
+  { id:4,  name:"James Whitmore",     g:"men",   p:22, hcp:11.3, rounds:74, note:"Former club champion 2016. Afternoon player, brings guests frequently. Member since 1998." },
+  { id:5,  name:"Patricia Langford",  g:"women", p:12, hcp:18.0, rounds:71, note:"Morning player, senior ladies group. Known for her short game finesse. Member since 2003." },
+  { id:6,  name:"Robert Caldwell",    g:"men",   p:33, hcp:6.7,  rounds:69, note:"Match play team captain. Scratch-level ball-striker, competitive stroke play. Member since 2001." },
+  { id:7,  name:"Susan Hemming",      g:"women", p:18, hcp:22.5, rounds:67, note:"Mixed scramble regular. Enthusiastic presence at every member event. Member since 2019." },
+  { id:8,  name:"David Forsythe",     g:"men",   p:44, hcp:3.8,  rounds:65, note:"Club champion 2021 & 2022. Competes in state amateur circuit. Member since 2010." },
+  { id:9,  name:"Carol Burnstead",    g:"women", p:24, hcp:16.2, rounds:63, note:"Ladies League vice captain. Plays every Friday morning. Member since 2007." },
+  { id:10, name:"Michael Wentworth",  g:"men",   p:55, hcp:9.4,  rounds:61, note:"Plays three times per week. Exceptional on the greens. Thursday group member. Member since 2014." },
+  { id:11, name:"Linda Ashworth",     g:"women", p:30, hcp:20.1, rounds:59, note:"Weekend golfer, participates in all charity events. Junior program volunteer. Member since 2016." },
+  { id:12, name:"Thomas Berkley",     g:"men",   p:66, hcp:13.6, rounds:58, note:"Frequent host of client rounds. Prefers afternoon tee times. Member since 2009." },
+  { id:13, name:"Margaret Donovan",   g:"women", p:36, hcp:11.8, rounds:56, note:"Competitive regional tournament player. Represents Interlachen in inter-club matches. Member since 2004." },
+  { id:14, name:"Charles Fairfield",  g:"men",   p:77, hcp:17.4, rounds:54, note:"Retired CFO, plays daily in summer. Founding member of the senior men's group. Member since 1996." },
+  { id:15, name:"Dorothy Hastings",   g:"women", p:42, hcp:24.0, rounds:52, note:"Social golfer; a fixture at the 19th hole. Co-chairs the annual charity auction. Member since 2015." },
+  { id:16, name:"William Prescott",   g:"men",   p:88, hcp:5.1,  rounds:51, note:"Single-digit handicap, club stroke play competitor. Plays both weekend days. Member since 2006." },
+  { id:17, name:"Barbara Whitfield",  g:"women", p:48, hcp:15.3, rounds:50, note:"Ladies League treasurer. Plays Wednesdays and Saturdays. Member since 2002." },
+  { id:18, name:"Richard Cromwell",   g:"men",   p:11, hcp:21.9, rounds:48, note:"Attends every member-guest event. Known for his warm welcome of new members. Member since 2017." },
+  { id:19, name:"Nancy Holbrook",     g:"women", p:54, hcp:19.7, rounds:47, note:"Participates in all ladies' charity scrambles. Active on the social committee. Member since 2013." },
+  { id:20, name:"Joseph Ainsworth",   g:"men",   p:23, hcp:7.2,  rounds:46, note:"Low handicap, loves the back nine challenge. Plays in the club league. Member since 2012." },
+  { id:21, name:"Sandra Cartwright",  g:"women", p:60, hcp:12.4, rounds:45, note:"Regional association tournament player. Strong driver of the ball. Member since 2008." },
+  { id:22, name:"George Blackwood",   g:"men",   p:34, hcp:26.3, rounds:44, note:"High handicap but hugely enthusiastic. Plays in every member event. Member since 2020." },
+  { id:23, name:"Karen Pemberton",    g:"women", p:66, hcp:17.8, rounds:43, note:"Regular Tuesday morning player. Organized the ladies' match play bracket. Member since 2011." },
+  { id:24, name:"Edward Stratford",   g:"men",   p:45, hcp:10.5, rounds:42, note:"Mid-handicap competitor. Plays in the Thursday men's league. Member since 2007." },
+  { id:25, name:"Helen Sinclair",     g:"women", p:72, hcp:23.1, rounds:41, note:"Social golfer, brings guests frequently. Popular at club dining events. Member since 2018." },
+  { id:26, name:"Frank Dunmore",      g:"men",   p:56, hcp:14.8, rounds:40, note:"Weekend player, enjoys course setup challenges. Strong on par 5s. Member since 2009." },
+  { id:27, name:"Janet Thornton",     g:"women", p:78, hcp:16.9, rounds:39, note:"Ladies League events organizer. Coordinated the spring fundraiser tournament. Member since 2006." },
+  { id:28, name:"Scott Harrington",   g:"men",   p:67, hcp:2.4,  rounds:38, note:"Near-scratch golfer, competes nationally in amateur events. Teaching assistant to the head pro. Member since 2015." },
+  { id:29, name:"Diane Ashford",      g:"women", p:84, hcp:21.3, rounds:37, note:"New member improving rapidly. Takes weekly lessons from the assistant pro. Member since 2022." },
+  { id:30, name:"Paul Crompton",      g:"men",   p:78, hcp:18.6, rounds:36, note:"Business member, entertains clients Friday afternoons. Prefers shotgun scramble format. Member since 2016." },
+  { id:31, name:"Ruth Eversley",      g:"women", p:90, hcp:13.2, rounds:35, note:"Competitive ladies player; represents Interlachen in inter-club matches. Member since 2004." },
+  { id:32, name:"Mark Whitfield",     g:"men",   p:89, hcp:8.9,  rounds:34, note:"Thursday men's group regular. Consistent ball-striker with a reliable short game. Member since 2010." },
+  { id:33, name:"Sharon Davenport",   g:"women", p:96, hcp:28.0, rounds:33, note:"Recreational golfer. Very active in the club's social programming. Member since 2021." },
+  { id:34, name:"Steven Blackstone",  g:"men",   p:90, hcp:15.7, rounds:32, note:"Finance professional; weekday afternoon tee times. Strong wind player. Member since 2013." },
+  { id:35, name:"Catherine Morley",   g:"women", p:4,  hcp:10.0, rounds:31, note:"Competitive in women's amateur circuit. Youngest regular competitor in the ladies' club. Member since 2019." },
+  { id:36, name:"Kenneth Fairbanks",  g:"men",   p:91, hcp:22.4, rounds:30, note:"Senior member and club historian. Participates in all senior men's events. Member since 1994." },
+  { id:37, name:"Donna Whitmore",     g:"women", p:7,  hcp:25.5, rounds:29, note:"Plays regularly with husband James. Enjoys the social leagues. Member since 1998." },
+  { id:38, name:"Gary Pemberton",     g:"men",   p:92, hcp:12.1, rounds:28, note:"Solid mid-handicapper. Plays in the men's Saturday draw. Member since 2011." },
+  { id:39, name:"Christine Aldrich",  g:"women", p:13, hcp:18.8, rounds:27, note:"Regular at ladies events. Volunteers with the junior golf program. Member since 2014." },
+  { id:40, name:"Brian Weatherford",  g:"men",   p:93, hcp:9.3,  rounds:26, note:"Former PGA club professional at a Chicago-area club. Excellent ball-striker and club resource. Member since 2017." }
+];
+
+// ────────────────────────────────────────────────────
+// HELPERS
+// ────────────────────────────────────────────────────
+var CAMERA_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>';
+
+function photoUrl(m) {
+  return 'https://randomuser.me/api/portraits/' + m.g + '/' + m.p + '.jpg';
+}
+
+function makePhotoWrap(m, size, tapCb) {
+  var wrap = document.createElement('div');
+  wrap.className = 'photo-wrap';
+  wrap.style.cssText = 'width:' + size + 'px;height:' + size + 'px;' + (tapCb ? 'cursor:pointer;' : '');
+
+  var img = document.createElement('img');
+  img.src = photoUrl(m);
+  img.alt = m.name;
+  img.onerror = function() {
+    this.remove();
+    var ph = document.createElement('div');
+    ph.className = 'photo-placeholder';
+    ph.innerHTML = CAMERA_SVG + '<span>Add Photo</span>';
+    ph.addEventListener('click', function() { showToast('Tap to add a photo for this member'); });
+    wrap.appendChild(ph);
+  };
+  wrap.appendChild(img);
+
+  if (tapCb) wrap.addEventListener('click', tapCb);
+  return wrap;
+}
+
+function shuffle(arr) {
+  var a = arr.slice();
+  for (var i = a.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+  }
+  return a;
+}
+
+function showToast(msg) {
+  var area = document.getElementById('toast-area');
+  var pill = document.createElement('div');
+  pill.className = 'toast-pill';
+  pill.textContent = msg;
+  area.appendChild(pill);
+  setTimeout(function() { pill.remove(); }, 2800);
+}
+
+// ────────────────────────────────────────────────────
+// AUTH
+// ────────────────────────────────────────────────────
+var PASSWORD = '1909';
+
+function isAuthed() { return sessionStorage.getItem('icc_auth') === '1'; }
+function setAuth()  { sessionStorage.setItem('icc_auth', '1'); }
+
+function initGate() {
+  var input = document.getElementById('pw-input');
+  var btn   = document.getElementById('pw-submit');
+  var err   = document.getElementById('pw-error');
+
+  function attempt() {
+    if (input.value.trim() === PASSWORD) {
+      setAuth();
+      document.getElementById('password-gate').classList.add('hidden');
+      document.getElementById('app').classList.remove('hidden');
+      initApp();
+      scheduleA2HS();
+    } else {
+      input.classList.remove('shake');
+      void input.offsetWidth; // reflow to restart animation
+      input.classList.add('shake');
+      err.textContent = 'Incorrect code — please try again.';
+      input.value = '';
+      setTimeout(function() { input.classList.remove('shake'); err.textContent = ''; }, 600);
+    }
+  }
+
+  btn.addEventListener('click', attempt);
+  input.addEventListener('keydown', function(e) { if (e.key === 'Enter') attempt(); });
+  input.focus();
+}
+
+// ────────────────────────────────────────────────────
+// APP INIT
+// ────────────────────────────────────────────────────
+function initApp() {
+  document.querySelectorAll('.mode-tab').forEach(function(tab) {
+    tab.addEventListener('click', function() { switchMode(tab.dataset.mode); });
+  });
+  switchMode('quiz');
+}
+
+function switchMode(mode) {
+  document.querySelectorAll('.mode-tab').forEach(function(t) {
+    t.classList.toggle('active', t.dataset.mode === mode);
+  });
+  document.querySelectorAll('.mode-section').forEach(function(s) {
+    s.classList.toggle('active', s.id === mode + '-section');
+  });
+
+  if      (mode === 'quiz')   startQuiz();
+  else if (mode === 'recall') startRecall();
+  else if (mode === 'lists')  renderLists();
+}
+
+// ────────────────────────────────────────────────────
+// PROGRESS ROW
+// ────────────────────────────────────────────────────
+function makeProgressRow(score, current, total) {
+  var pct = total > 0 ? (current / total) * 100 : 0;
+  var row = document.createElement('div');
+  row.className = 'quiz-progress';
+  row.innerHTML =
+    '<div class="quiz-score-txt">Score: <span>' + score + '</span></div>' +
+    '<div class="progress-bar"><div class="progress-fill" style="width:' + pct + '%"></div></div>' +
+    '<div class="quiz-score-txt">' + (current + 1) + '/' + total + '</div>';
+  return row;
+}
+
+// ────────────────────────────────────────────────────
+// QUIZ MODE
+// ────────────────────────────────────────────────────
+var Q = { queue:[], idx:0, score:0, answered:false };
+
+function startQuiz(pool) {
+  pool = pool || MEMBERS;
+  Q = { queue: shuffle(pool), idx: 0, score: 0, answered: false };
+  renderQuiz();
+}
+
+function renderQuiz() {
+  var sec = document.getElementById('quiz-section');
+  sec.innerHTML = '';
+
+  if (Q.idx >= Q.queue.length) {
+    var pct = Math.round((Q.score / Q.queue.length) * 100);
+    var end = document.createElement('div');
+    end.className = 'score-end';
+    end.innerHTML =
+      '<div class="score-pct">' + pct + '%</div>' +
+      '<div class="score-sub">' + Q.score + ' of ' + Q.queue.length + ' correct</div>' +
+      '<button class="restart-btn">Play Again \u2192</button>';
+    end.querySelector('.restart-btn').addEventListener('click', function() { startQuiz(); });
+    sec.appendChild(end);
+    return;
+  }
+
+  var member = Q.queue[Q.idx];
+
+  sec.appendChild(makeProgressRow(Q.score, Q.idx, Q.queue.length));
+  sec.appendChild(makePhotoWrap(member, 165));
+
+  var prompt = document.createElement('div');
+  prompt.className = 'quiz-prompt';
+  prompt.textContent = 'Who is this member?';
+  sec.appendChild(prompt);
+
+  // Build 4 options
+  var wrong = shuffle(MEMBERS.filter(function(m) { return m.id !== member.id; })).slice(0, 3);
+  var options = shuffle([member].concat(wrong));
+  var LETTERS = ['A','B','C','D'];
+
+  var list = document.createElement('div');
+  list.className = 'options-list';
+
+  var continueBtn = document.createElement('button');
+  continueBtn.className = 'continue-btn';
+  continueBtn.textContent = 'Tap to continue \u2192';
+  continueBtn.style.display = 'none';
+  continueBtn.addEventListener('click', function() {
+    Q.idx++;
+    Q.answered = false;
+    renderQuiz();
+  });
+
+  options.forEach(function(opt, i) {
+    var btn = document.createElement('button');
+    btn.className = 'opt-btn';
+    btn.innerHTML = '<span class="opt-letter">' + LETTERS[i] + '</span><span>' + opt.name + '</span>';
+    btn.addEventListener('click', function() {
+      if (Q.answered) return;
+      Q.answered = true;
+      list.querySelectorAll('.opt-btn').forEach(function(b) { b.style.pointerEvents = 'none'; });
+      if (opt.id === member.id) {
+        btn.classList.add('correct');
+        Q.score++;
+        showToast('Correct \u2713');
+      } else {
+        btn.classList.add('wrong');
+        list.querySelectorAll('.opt-btn').forEach(function(b) {
+          if (b.querySelector('span:last-child').textContent === member.name) b.classList.add('reveal');
+        });
+        showToast('Incorrect');
+      }
+      continueBtn.style.display = 'block';
+    });
+    list.appendChild(btn);
+  });
+
+  sec.appendChild(list);
+  sec.appendChild(continueBtn);
+}
+
+// ────────────────────────────────────────────────────
+// RECALL MODE
+// ────────────────────────────────────────────────────
+var R = { queue:[], idx:0, revealed:false };
+
+function startRecall(pool) {
+  pool = pool || MEMBERS;
+  R = { queue: shuffle(pool), idx: 0, revealed: false };
+  renderRecall();
+}
+
+function renderRecall() {
+  var sec = document.getElementById('recall-section');
+  sec.innerHTML = '';
+
+  if (R.idx >= R.queue.length) {
+    var end = document.createElement('div');
+    end.className = 'score-end';
+    end.innerHTML =
+      '<div class="score-pct">\u2713</div>' +
+      '<div class="score-sub">All ' + R.queue.length + ' members reviewed!</div>' +
+      '<button class="restart-btn">Review Again \u2192</button>';
+    end.querySelector('.restart-btn').addEventListener('click', function() { startRecall(); });
+    sec.appendChild(end);
+    return;
+  }
+
+  var m = R.queue[R.idx];
+
+  var progRow = document.createElement('div');
+  progRow.className = 'quiz-progress';
+  var pct = (R.idx / R.queue.length) * 100;
+  progRow.innerHTML =
+    '<div class="quiz-score-txt" style="opacity:0">\xb7</div>' +
+    '<div class="progress-bar"><div class="progress-fill" style="width:' + pct + '%"></div></div>' +
+    '<div class="quiz-score-txt">' + (R.idx + 1) + '/' + R.queue.length + '</div>';
+  sec.appendChild(progRow);
+
+  var hint = document.createElement('div');
+  hint.className = 'recall-hint';
+  hint.textContent = R.revealed ? 'Tap photo to advance \u2192' : 'Tap the photo to reveal the name';
+  sec.appendChild(hint);
+
+  if (!R.revealed) {
+    // Tap = reveal name
+    var wrap = makePhotoWrap(m, 180, function() {
+      R.revealed = true;
+      renderRecall();
+    });
+    sec.appendChild(wrap);
+  } else {
+    // Tap photo = advance to next
+    var wrap2 = makePhotoWrap(m, 180, function() {
+      R.idx++;
+      R.revealed = false;
+      renderRecall();
+    });
+    sec.appendChild(wrap2);
+
+    var block = document.createElement('div');
+    block.className = 'recall-name-block';
+    block.innerHTML =
+      '<div class="recall-name">' + m.name + '</div>' +
+      '<div class="recall-detail">Hdcp ' + m.hcp + ' \xb7 ' + m.rounds + ' rounds</div>' +
+      '<div class="recall-notes">' + m.note + '</div>';
+    sec.appendChild(block);
+
+    var contBtn = document.createElement('button');
+    contBtn.className = 'continue-btn';
+    contBtn.style.marginTop = '1.25rem';
+    contBtn.textContent = 'Next Member \u2192';
+    contBtn.addEventListener('click', function() {
+      R.idx++;
+      R.revealed = false;
+      renderRecall();
+    });
+    sec.appendChild(contBtn);
+  }
+}
+
+// ────────────────────────────────────────────────────
+// LISTS + LEITNER SPACED REPETITION
+// ────────────────────────────────────────────────────
+var lists = JSON.parse(localStorage.getItem('icc_lists') || '[]');
+function saveLists() { localStorage.setItem('icc_lists', JSON.stringify(lists)); }
+
+var studyCtx = null;
+
+function renderLists() {
+  var sec = document.getElementById('lists-section');
+  sec.innerHTML = '';
+  sec.style.alignItems = 'stretch';
+
+  var toolbar = document.createElement('div');
+  toolbar.className = 'lists-toolbar';
+  var titleEl = document.createElement('div');
+  titleEl.className = 'lists-title-txt';
+  titleEl.textContent = 'My Lists';
+  var newBtn = document.createElement('button');
+  newBtn.className = 'new-list-btn';
+  newBtn.textContent = '+ New List';
+  newBtn.addEventListener('click', openCreateModal);
+  toolbar.appendChild(titleEl);
+  toolbar.appendChild(newBtn);
+  sec.appendChild(toolbar);
+
+  if (lists.length === 0) {
+    var empty = document.createElement('div');
+    empty.className = 'empty-state';
+    empty.innerHTML =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="var(--gray-400)" stroke-width="1.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>' +
+      '<p>No lists yet.</p>' +
+      '<p style="font-size:0.8rem;margin-top:0.4rem;">Create a list to study specific members with spaced repetition.</p>';
+    sec.appendChild(empty);
+    return;
+  }
+
+  lists.forEach(function(list, idx) {
+    var ids = list.memberIds;
+    var boxes = list.boxes || {};
+    var b1 = ids.filter(function(id) { return (boxes[id] || 1) === 1; }).length;
+    var b2 = ids.filter(function(id) { return (boxes[id] || 1) === 2; }).length;
+    var b3 = ids.filter(function(id) { return (boxes[id] || 1) === 3; }).length;
+
+    var card = document.createElement('div');
+    card.className = 'list-card';
+    card.innerHTML =
+      '<div class="list-card-name">' + list.name + '</div>' +
+      '<div class="list-card-meta">' + ids.length + ' member' + (ids.length !== 1 ? 's' : '') + ' \xb7 Tap to study</div>' +
+      '<div class="box-badges">' +
+        '<span class="box-badge b1">Box 1: ' + b1 + '</span>' +
+        '<span class="box-badge b2">Box 2: ' + b2 + '</span>' +
+        '<span class="box-badge b3">Box 3: ' + b3 + '</span>' +
+      '</div>';
+    (function(i) { card.addEventListener('click', function() { startListStudy(i); }); })(idx);
+    sec.appendChild(card);
+  });
+}
+
+// ── CREATE LIST MODAL ─────────────────────────────
+function openCreateModal() {
+  var picker = document.getElementById('member-picker');
+  picker.innerHTML = '';
+  document.getElementById('list-name-input').value = '';
+
+  MEMBERS.forEach(function(m) {
+    var item = document.createElement('div');
+    item.className = 'picker-item';
+    item.dataset.id = m.id;
+
+    var img = document.createElement('img');
+    img.className = 'picker-thumb';
+    img.src = photoUrl(m);
+    img.alt = m.name;
+    img.onerror = function() {
+      this.remove();
+      var ph = document.createElement('div');
+      ph.className = 'picker-thumb-ph';
+      ph.innerHTML = CAMERA_SVG;
+      item.prepend(ph);
+    };
+
+    var label = document.createElement('span');
+    label.textContent = m.name;
+    item.appendChild(img);
+    item.appendChild(label);
+    item.addEventListener('click', function() { item.classList.toggle('selected'); });
+    picker.appendChild(item);
+  });
+
+  document.getElementById('create-list-modal').classList.remove('hidden');
+}
+
+document.getElementById('modal-cancel').addEventListener('click', function() {
+  document.getElementById('create-list-modal').classList.add('hidden');
+});
+
+document.getElementById('modal-save').addEventListener('click', function() {
+  var name = document.getElementById('list-name-input').value.trim();
+  if (!name) { showToast('Please enter a list name'); return; }
+
+  var selected = Array.from(document.querySelectorAll('.picker-item.selected'));
+  if (selected.length === 0) { showToast('Select at least one member'); return; }
+
+  var memberIds = selected.map(function(el) { return parseInt(el.dataset.id); });
+  var boxes = {};
+  memberIds.forEach(function(id) { boxes[id] = 1; });
+
+  lists.push({ name: name, memberIds: memberIds, boxes: boxes, created: Date.now() });
+  saveLists();
+
+  document.getElementById('create-list-modal').classList.add('hidden');
+  showToast('"' + name + '" created with ' + memberIds.length + ' members');
+  renderLists();
+});
+
+// ── LIST STUDY SESSION (Leitner quiz) ─────────────
+function startListStudy(listIdx) {
+  var list = lists[listIdx];
+  var boxes = list.boxes || {};
+
+  // Leitner weighting: Box 1 = 3x, Box 2 = 2x, Box 3 = 1x
+  var weighted = [];
+  list.memberIds.forEach(function(id) {
+    var m = MEMBERS.filter(function(x) { return x.id === id; })[0];
+    if (!m) return;
+    var box = boxes[id] || 1;
+    var count = box === 1 ? 3 : box === 2 ? 2 : 1;
+    for (var i = 0; i < count; i++) weighted.push(m);
+  });
+
+  studyCtx = { listIdx: listIdx, queue: shuffle(weighted), idx: 0, score: 0, answered: false };
+  renderListStudy();
+}
+
+function renderListStudy() {
+  var sec = document.getElementById('lists-section');
+  sec.innerHTML = '';
+  sec.style.alignItems = 'center';
+
+  var listIdx = studyCtx.listIdx;
+  var list = lists[listIdx];
+  var queue = studyCtx.queue;
+  var idx = studyCtx.idx;
+  var score = studyCtx.score;
+
+  // Back bar
+  var bar = document.createElement('div');
+  bar.className = 'study-bar';
+  var backBtn = document.createElement('button');
+  backBtn.className = 'back-btn';
+  backBtn.textContent = '\u2190 Lists';
+  backBtn.addEventListener('click', function() { studyCtx = null; renderLists(); });
+  var titleEl = document.createElement('div');
+  titleEl.className = 'study-bar-title';
+  titleEl.textContent = list.name;
+  bar.appendChild(backBtn);
+  bar.appendChild(titleEl);
+  sec.appendChild(bar);
+
+  if (idx >= queue.length) {
+    var pct = Math.round((score / queue.length) * 100);
+    var end = document.createElement('div');
+    end.className = 'score-end';
+    end.innerHTML =
+      '<div class="score-pct">' + pct + '%</div>' +
+      '<div class="score-sub">' + score + ' of ' + queue.length + ' correct</div>' +
+      '<button class="restart-btn">Study Again \u2192</button>';
+    end.querySelector('.restart-btn').addEventListener('click', function() { startListStudy(listIdx); });
+    sec.appendChild(end);
+    return;
+  }
+
+  var member = queue[idx];
+  var currentBox = (list.boxes[member.id] || 1);
+
+  sec.appendChild(makeProgressRow(score, idx, queue.length));
+
+  // Box indicator
+  var boxClass = currentBox === 1 ? 'b1' : currentBox === 2 ? 'b2' : 'b3';
+  var boxEl = document.createElement('div');
+  boxEl.style.cssText = 'margin-bottom:0.65rem;';
+  boxEl.innerHTML = '<span class="box-badge ' + boxClass + '">Box ' + currentBox + '</span>';
+  sec.appendChild(boxEl);
+
+  sec.appendChild(makePhotoWrap(member, 155));
+
+  var prompt = document.createElement('div');
+  prompt.className = 'quiz-prompt';
+  prompt.textContent = 'Who is this member?';
+  sec.appendChild(prompt);
+
+  // Options: prefer list members, pad from full roster
+  var listMembers = list.memberIds
+    .map(function(id) { return MEMBERS.filter(function(m) { return m.id === id; })[0]; })
+    .filter(function(m) { return m && m.id !== member.id; });
+  var wrongPool = shuffle(listMembers);
+  if (wrongPool.length < 3) {
+    var extras = shuffle(MEMBERS.filter(function(m) {
+      return m.id !== member.id && list.memberIds.indexOf(m.id) === -1;
+    }));
+    wrongPool = wrongPool.concat(extras);
+  }
+  var options = shuffle([member].concat(wrongPool.slice(0, 3)));
+  var LETTERS = ['A','B','C','D'];
+
+  var optList = document.createElement('div');
+  optList.className = 'options-list';
+
+  var contBtn = document.createElement('button');
+  contBtn.className = 'continue-btn';
+  contBtn.textContent = 'Tap to continue \u2192';
+  contBtn.style.display = 'none';
+  contBtn.addEventListener('click', function() {
+    studyCtx.idx++;
+    studyCtx.answered = false;
+    renderListStudy();
+  });
+
+  options.forEach(function(opt, i) {
+    var btn = document.createElement('button');
+    btn.className = 'opt-btn';
+    btn.innerHTML = '<span class="opt-letter">' + LETTERS[i] + '</span><span>' + opt.name + '</span>';
+    btn.addEventListener('click', function() {
+      if (studyCtx.answered) return;
+      studyCtx.answered = true;
+      optList.querySelectorAll('.opt-btn').forEach(function(b) { b.style.pointerEvents = 'none'; });
+
+      if (opt.id === member.id) {
+        btn.classList.add('correct');
+        studyCtx.score++;
+        var newBox = Math.min(currentBox + 1, 3);
+        list.boxes[member.id] = newBox;
+        saveLists();
+        showToast(newBox === 3 ? 'Correct! Mastered \u2713' : 'Correct! \u2192 Box ' + newBox);
+      } else {
+        btn.classList.add('wrong');
+        optList.querySelectorAll('.opt-btn').forEach(function(b) {
+          if (b.querySelector('span:last-child').textContent === member.name) b.classList.add('reveal');
+        });
+        list.boxes[member.id] = 1;
+        saveLists();
+        showToast('Incorrect \u2014 back to Box 1');
+      }
+      contBtn.style.display = 'block';
+    });
+    optList.appendChild(btn);
+  });
+
+  sec.appendChild(optList);
+  sec.appendChild(contBtn);
+}
+
+// ────────────────────────────────────────────────────
+// ADD TO HOME SCREEN (A2HS)
+// ────────────────────────────────────────────────────
+var deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', function(e) {
+  e.preventDefault();
+  deferredPrompt = e;
+});
+
+function scheduleA2HS() {
+  var standalone = window.navigator.standalone === true ||
+                   window.matchMedia('(display-mode: standalone)').matches;
+  if (standalone) return;
+  if (sessionStorage.getItem('a2hs_dismissed')) return;
+
+  var isIOS     = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  var isAndroid = /android/i.test(navigator.userAgent);
+  var banner    = document.getElementById('a2hs-banner');
+  var desc      = document.getElementById('a2hs-desc');
+
+  if (isIOS) {
+    desc.innerHTML = 'Tap the <strong>Share &#x2191;</strong> button, then <strong>"Add to Home Screen"</strong>.';
+    setTimeout(function() { banner.classList.remove('hidden'); }, 2000);
+  } else if (isAndroid && deferredPrompt) {
+    desc.textContent = 'Install this app for quick access from your home screen.';
+    banner.querySelector('.a2hs-icon-wrap').style.cursor = 'pointer';
+    banner.querySelector('.a2hs-icon-wrap').addEventListener('click', function() {
+      deferredPrompt.prompt();
+      banner.classList.add('hidden');
+    });
+    setTimeout(function() { banner.classList.remove('hidden'); }, 2000);
+  }
+}
+
+document.getElementById('a2hs-close').addEventListener('click', function() {
+  document.getElementById('a2hs-banner').classList.add('hidden');
+  sessionStorage.setItem('a2hs_dismissed', '1');
+});
+
+// ────────────────────────────────────────────────────
+// BOOT
+// ────────────────────────────────────────────────────
+if (isAuthed()) {
+  document.getElementById('password-gate').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  initApp();
+  scheduleA2HS();
+} else {
+  initGate();
+}
+</script>
+</body>
+</html>

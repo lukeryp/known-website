@@ -1,0 +1,2046 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0d1117">
+<title>FORGE — Golf Analytics by RYP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+/* ─── RESET & ROOT ─────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { height: 100%; -webkit-text-size-adjust: 100%; }
+
+:root {
+  --bg:         #0d1117;
+  --bg2:        #161b22;
+  --bg3:        #1c2333;
+  --border:     rgba(255,255,255,0.08);
+  --border2:    rgba(255,255,255,0.14);
+  --red:        #C41E3A;
+  --red-light:  #e8294d;
+  --red-dim:    rgba(196,30,58,0.18);
+  --red-glow:   rgba(196,30,58,0.35);
+  --green:      #2ea043;
+  --yellow:     #d29922;
+  --blue:       #388bfd;
+  --text:       #e6edf3;
+  --text2:      #8b949e;
+  --text3:      #484f58;
+  --gold:       #C9A84C;
+  --sans:       'DM Sans', system-ui, -apple-system, sans-serif;
+  --mono:       'DM Mono', 'Courier New', monospace;
+  --radius:     12px;
+  --radius-sm:  8px;
+}
+
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  min-height: 100%;
+}
+
+/* ─── SCROLLBAR ─────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 3px; }
+
+/* ─── LAYOUT ────────────────────────────────────────────────── */
+.app { display: flex; flex-direction: column; min-height: 100vh; }
+
+/* ─── TOP NAV (desktop) ─────────────────────────────────────── */
+.topnav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+  background: rgba(13,17,23,0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  height: 60px;
+  display: flex; align-items: center;
+  padding: 0 28px;
+  gap: 0;
+}
+.topnav-logo {
+  font-size: 18px; font-weight: 800; letter-spacing: 3px;
+  color: var(--text); text-decoration: none; margin-right: 40px;
+  display: flex; align-items: center; gap: 10px;
+}
+.logo-icon {
+  width: 30px; height: 30px;
+  background: var(--red);
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; font-weight: 900; color: white;
+}
+.topnav-tabs {
+  display: flex; gap: 4px; flex: 1;
+}
+.topnav-tab {
+  padding: 7px 16px; border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  color: var(--text2); border: none; background: none;
+  transition: all 0.18s; letter-spacing: 0.3px;
+}
+.topnav-tab:hover { color: var(--text); background: var(--bg3); }
+.topnav-tab.active { color: var(--red-light); background: var(--red-dim); }
+
+.topnav-user {
+  display: flex; align-items: center; gap: 10px;
+  margin-left: auto;
+}
+.user-avatar {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--red), #8b1a2e);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700; color: white;
+  border: 2px solid var(--red-dim);
+}
+.user-hcp {
+  font-size: 12px; color: var(--text2); font-family: var(--mono);
+}
+.hcp-val { color: var(--red-light); font-weight: 600; }
+
+/* hamburger only on mobile */
+.hamburger {
+  display: none; background: none; border: none; cursor: pointer;
+  padding: 6px; margin-left: auto; color: var(--text2);
+  flex-direction: column; gap: 5px; align-items: center; justify-content: center;
+}
+.ham-line {
+  width: 22px; height: 2px; background: var(--text2);
+  border-radius: 2px; transition: all 0.2s;
+}
+
+/* ─── MOBILE NAV DRAWER ─────────────────────────────────────── */
+.nav-drawer {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 300; display: none;
+}
+.nav-drawer.open { display: block; }
+.nav-drawer-backdrop {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0.6);
+}
+.nav-drawer-panel {
+  position: absolute; top: 0; right: 0; bottom: 0;
+  width: 260px;
+  background: var(--bg2);
+  border-left: 1px solid var(--border2);
+  display: flex; flex-direction: column;
+  padding: 24px 0;
+  transform: translateX(0);
+}
+.drawer-header {
+  padding: 0 20px 20px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 12px;
+}
+.drawer-logo { font-size: 18px; font-weight: 800; letter-spacing: 3px; display: flex; align-items: center; gap: 10px; }
+.drawer-user { margin-top: 12px; display: flex; align-items: center; gap: 10px; }
+.drawer-user-name { font-size: 14px; font-weight: 600; }
+.drawer-user-hcp { font-size: 12px; color: var(--text2); }
+.drawer-tabs { list-style: none; padding: 0 8px; }
+.drawer-tab {
+  padding: 12px 16px; border-radius: var(--radius-sm);
+  font-size: 14px; font-weight: 600; cursor: pointer;
+  color: var(--text2); display: flex; align-items: center; gap: 12px;
+  margin-bottom: 4px; transition: all 0.18s;
+}
+.drawer-tab:hover { color: var(--text); background: var(--bg3); }
+.drawer-tab.active { color: var(--red-light); background: var(--red-dim); }
+.drawer-tab-icon { width: 18px; text-align: center; font-size: 16px; }
+
+/* ─── MAIN CONTENT ──────────────────────────────────────────── */
+.content {
+  flex: 1;
+  padding-top: 60px;
+}
+
+/* ─── VIEWS ─────────────────────────────────────────────────── */
+.view { display: none; }
+.view.active { display: block; }
+
+/* ─── DASHBOARD VIEW ────────────────────────────────────────── */
+.dashboard {
+  max-width: 1280px; margin: 0 auto;
+  padding: 28px 28px 60px;
+}
+
+/* Hero row */
+.dash-hero {
+  display: grid;
+  grid-template-columns: 280px 1fr 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+/* Handicap card */
+.hcp-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  display: flex; flex-direction: column;
+  position: relative; overflow: hidden;
+}
+.hcp-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: var(--red);
+}
+.hcp-label {
+  font-size: 11px; font-weight: 700; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--text2); margin-bottom: 12px;
+}
+.hcp-number {
+  font-size: 64px; font-weight: 800; line-height: 1;
+  color: var(--text); font-family: var(--mono);
+}
+.hcp-number span { font-size: 28px; color: var(--red-light); }
+.hcp-trend {
+  margin-top: 12px; font-size: 12px;
+  display: flex; align-items: center; gap: 6px;
+}
+.trend-down { color: var(--green); }
+.trend-up { color: var(--red-light); }
+.hcp-sub { font-size: 11px; color: var(--text3); margin-top: 4px; }
+
+/* Stat hero cards */
+.stat-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  position: relative; overflow: hidden;
+}
+.stat-card-label {
+  font-size: 11px; font-weight: 700; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--text2); margin-bottom: 8px;
+}
+.stat-card-val {
+  font-size: 36px; font-weight: 800; font-family: var(--mono);
+  line-height: 1.1; margin-bottom: 6px;
+}
+.stat-card-sub { font-size: 12px; color: var(--text2); }
+.stat-card-bar {
+  position: absolute; bottom: 0; left: 0; right: 0; height: 3px;
+  background: var(--border);
+}
+.stat-card-bar-fill {
+  height: 100%; border-radius: 0 2px 2px 0;
+  background: var(--red);
+  transition: width 1s ease;
+}
+
+/* Section headers */
+.section-header {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 16px; margin-top: 28px;
+}
+.section-title {
+  font-size: 13px; font-weight: 700; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--text2);
+}
+.section-line {
+  flex: 1; height: 1px; background: var(--border);
+}
+.section-badge {
+  font-size: 11px; padding: 3px 10px;
+  background: var(--red-dim); color: var(--red-light);
+  border-radius: 20px; font-weight: 600;
+}
+
+/* Two-col grid */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+.grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px; }
+
+/* Chart cards */
+.chart-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+}
+.chart-title {
+  font-size: 13px; font-weight: 700; color: var(--text2);
+  letter-spacing: 0.5px; margin-bottom: 16px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.chart-subtitle { font-size: 11px; color: var(--text3); font-weight: 400; }
+.chart-wrap { position: relative; }
+
+/* Distance bars */
+.distance-grid { display: flex; flex-direction: column; gap: 10px; }
+.dist-row { display: flex; align-items: center; gap: 12px; }
+.dist-club {
+  width: 50px; font-size: 12px; font-weight: 600;
+  color: var(--text2); flex-shrink: 0; font-family: var(--mono);
+}
+.dist-bar-wrap {
+  flex: 1; height: 26px; background: var(--bg3);
+  border-radius: 4px; overflow: hidden; position: relative;
+}
+.dist-bar {
+  height: 100%; border-radius: 4px;
+  display: flex; align-items: center; padding-left: 10px;
+  font-size: 11px; font-weight: 700; color: white;
+  transition: width 1.2s cubic-bezier(0.16,1,0.3,1);
+  white-space: nowrap;
+}
+.dist-bar.driver { background: linear-gradient(90deg, var(--red), #8b1a2e); }
+.dist-bar.iron { background: linear-gradient(90deg, #388bfd, #1a5bc4); }
+.dist-bar.wedge { background: linear-gradient(90deg, var(--gold), #8b6a1a); }
+.dist-yds { width: 48px; font-size: 12px; font-weight: 700; color: var(--text); text-align: right; font-family: var(--mono); }
+
+/* Accuracy rings */
+.accuracy-cards { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
+.acc-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px;
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+}
+.acc-ring-wrap { position: relative; width: 100px; height: 100px; margin-bottom: 12px; }
+.acc-ring-svg { transform: rotate(-90deg); }
+.acc-ring-bg { fill: none; stroke: var(--bg3); stroke-width: 8; }
+.acc-ring-fill { fill: none; stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset 1.2s ease; }
+.acc-pct {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; font-weight: 800; font-family: var(--mono);
+}
+.acc-label { font-size: 12px; font-weight: 600; color: var(--text2); letter-spacing: 0.5px; }
+.acc-sublabel { font-size: 11px; color: var(--text3); margin-top: 3px; }
+
+/* Dispersion chart */
+.dispersion-wrap {
+  position: relative;
+  width: 100%; aspect-ratio: 3/2;
+  background: var(--bg3); border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.disp-canvas { position: absolute; inset: 0; width: 100% !important; height: 100% !important; }
+
+/* Strokes gained bars */
+.sg-list { display: flex; flex-direction: column; gap: 12px; }
+.sg-row { display: flex; flex-direction: column; gap: 4px; }
+.sg-row-header { display: flex; align-items: center; justify-content: space-between; }
+.sg-name { font-size: 12px; font-weight: 600; color: var(--text2); }
+.sg-val {
+  font-size: 13px; font-weight: 700; font-family: var(--mono);
+}
+.sg-positive { color: var(--green); }
+.sg-negative { color: var(--red-light); }
+.sg-bar-wrap {
+  height: 6px; background: var(--bg3); border-radius: 3px;
+  overflow: hidden; position: relative;
+}
+.sg-bar-center {
+  position: absolute; top: 0; bottom: 0; left: 50%; width: 1px;
+  background: var(--border2);
+}
+.sg-bar-fill {
+  height: 100%; border-radius: 3px;
+  transition: all 1s ease;
+  position: absolute; top: 0;
+}
+.sg-bar-fill.positive { background: var(--green); left: 50%; }
+.sg-bar-fill.negative { background: var(--red-light); right: 50%; }
+
+/* Session history */
+.session-list { display: flex; flex-direction: column; gap: 10px; }
+.session-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); overflow: hidden; cursor: pointer;
+  transition: border-color 0.2s;
+}
+.session-card:hover { border-color: var(--border2); }
+.session-card-header {
+  display: flex; align-items: center; gap: 16px;
+  padding: 16px 20px;
+}
+.session-date {
+  background: var(--red-dim); border-radius: var(--radius-sm);
+  padding: 8px 12px; text-align: center; flex-shrink: 0;
+  min-width: 52px;
+}
+.session-date-day { font-size: 20px; font-weight: 800; font-family: var(--mono); color: var(--red-light); line-height: 1; }
+.session-date-mon { font-size: 10px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; }
+.session-info { flex: 1; }
+.session-course { font-size: 14px; font-weight: 700; margin-bottom: 3px; }
+.session-meta { font-size: 12px; color: var(--text2); display: flex; gap: 12px; }
+.session-meta span { display: flex; align-items: center; gap: 4px; }
+.session-score-wrap { display: flex; align-items: center; gap: 16px; }
+.session-score {
+  text-align: center;
+}
+.session-score-val {
+  font-size: 28px; font-weight: 800; font-family: var(--mono); line-height: 1;
+}
+.session-score-par { font-size: 11px; color: var(--text2); }
+.session-score.under .session-score-val { color: var(--red-light); }
+.session-score.even .session-score-val { color: var(--text); }
+.session-score.over .session-score-val { color: var(--text2); }
+.session-chevron { color: var(--text3); transition: transform 0.2s; }
+.session-card.open .session-chevron { transform: rotate(90deg); }
+.session-detail {
+  display: none; padding: 0 20px 16px;
+  border-top: 1px solid var(--border);
+}
+.session-card.open .session-detail { display: block; }
+.session-holes {
+  display: grid; grid-template-columns: repeat(9,1fr);
+  gap: 4px; margin-top: 12px;
+}
+.hole-cell {
+  text-align: center; padding: 6px 4px;
+  background: var(--bg3); border-radius: 4px;
+}
+.hole-num { font-size: 9px; color: var(--text3); margin-bottom: 2px; }
+.hole-score { font-size: 13px; font-weight: 700; font-family: var(--mono); }
+.hole-score.eagle { color: #f0c040; }
+.hole-score.birdie { color: var(--red-light); }
+.hole-score.par { color: var(--text2); }
+.hole-score.bogey { color: #d29922; }
+.hole-score.double { color: #8b949e; }
+.hole-score.triple { color: var(--text3); }
+
+/* ─── PRACTICE VIEW ─────────────────────────────────────────── */
+.practice {
+  max-width: 600px; margin: 0 auto;
+  padding: 20px 16px 80px;
+}
+
+.practice-header {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px;
+  margin-bottom: 16px;
+  display: flex; align-items: center; gap: 16px;
+}
+.timer-display {
+  font-size: 42px; font-weight: 800; font-family: var(--mono);
+  color: var(--red-light); line-height: 1;
+}
+.timer-controls { display: flex; flex-direction: column; gap: 8px; }
+.timer-btn {
+  padding: 8px 20px; border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 700; cursor: pointer; border: none;
+  transition: all 0.15s;
+}
+.timer-btn.start { background: var(--red); color: white; }
+.timer-btn.start:hover { background: var(--red-light); }
+.timer-btn.reset { background: var(--bg3); color: var(--text2); }
+.timer-btn.reset:hover { background: var(--border2); color: var(--text); }
+.session-info-row {
+  flex: 1; display: flex; flex-direction: column; gap: 6px;
+}
+.session-label { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--text2); }
+.session-shots-count { font-size: 28px; font-weight: 800; font-family: var(--mono); color: var(--text); }
+.session-shots-sub { font-size: 11px; color: var(--text3); }
+
+/* Shot logger */
+.shot-logger {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px;
+  margin-bottom: 16px;
+}
+.shot-logger-title {
+  font-size: 13px; font-weight: 700; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--text2);
+  margin-bottom: 16px;
+}
+.club-grid {
+  display: grid; grid-template-columns: repeat(4,1fr);
+  gap: 6px; margin-bottom: 16px;
+}
+.club-btn {
+  padding: 10px 6px; border-radius: var(--radius-sm);
+  font-size: 12px; font-weight: 700;
+  background: var(--bg3); color: var(--text2);
+  border: 1px solid var(--border); cursor: pointer;
+  transition: all 0.15s; text-align: center;
+}
+.club-btn:hover { border-color: var(--border2); color: var(--text); }
+.club-btn.selected { background: var(--red-dim); border-color: var(--red); color: var(--red-light); }
+
+.result-grid {
+  display: grid; grid-template-columns: repeat(3,1fr);
+  gap: 6px; margin-bottom: 16px;
+}
+.result-btn {
+  padding: 10px; border-radius: var(--radius-sm);
+  font-size: 12px; font-weight: 700;
+  border: 1px solid var(--border); cursor: pointer;
+  transition: all 0.15s; text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+}
+.result-btn .result-icon { font-size: 18px; }
+.result-btn.fairway { background: rgba(46,160,67,0.12); color: var(--green); border-color: rgba(46,160,67,0.3); }
+.result-btn.rough { background: rgba(210,153,34,0.12); color: var(--yellow); border-color: rgba(210,153,34,0.3); }
+.result-btn.hazard { background: rgba(196,30,58,0.12); color: var(--red-light); border-color: rgba(196,30,58,0.3); }
+.result-btn.selected { outline: 2px solid currentColor; }
+
+.dist-input-row {
+  display: flex; gap: 10px; align-items: center; margin-bottom: 16px;
+}
+.dist-input {
+  flex: 1; background: var(--bg3); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 12px 14px;
+  font-family: var(--mono); font-size: 20px; font-weight: 700;
+  color: var(--text); text-align: center; outline: none;
+  transition: border-color 0.2s;
+}
+.dist-input:focus { border-color: var(--red); }
+.dist-label { font-size: 13px; font-weight: 600; color: var(--text2); }
+
+.log-btn {
+  width: 100%; padding: 14px;
+  background: var(--red); color: white;
+  border: none; border-radius: var(--radius-sm);
+  font-size: 15px; font-weight: 700; cursor: pointer;
+  transition: all 0.15s; letter-spacing: 0.5px;
+}
+.log-btn:hover { background: var(--red-light); transform: translateY(-1px); }
+.log-btn:active { transform: translateY(0); }
+
+/* Recent shots feed */
+.shots-feed {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px;
+}
+.shots-feed-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 14px;
+}
+.shots-feed-title {
+  font-size: 13px; font-weight: 700; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--text2);
+}
+.clear-btn {
+  font-size: 11px; font-weight: 600; color: var(--text3);
+  background: none; border: none; cursor: pointer;
+  transition: color 0.15s;
+}
+.clear-btn:hover { color: var(--red-light); }
+.shot-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 0; border-bottom: 1px solid var(--border);
+}
+.shot-item:last-child { border-bottom: none; }
+.shot-club-tag {
+  background: var(--red-dim); color: var(--red-light);
+  font-size: 11px; font-weight: 700; padding: 4px 10px;
+  border-radius: 20px; font-family: var(--mono); flex-shrink: 0;
+}
+.shot-dist { font-size: 16px; font-weight: 700; font-family: var(--mono); }
+.shot-dist-unit { font-size: 11px; color: var(--text3); }
+.shot-result-dot {
+  width: 8px; height: 8px; border-radius: 50%; margin-left: auto; flex-shrink: 0;
+}
+.shot-result-dot.fairway { background: var(--green); }
+.shot-result-dot.rough { background: var(--yellow); }
+.shot-result-dot.hazard { background: var(--red); }
+.shot-time { font-size: 11px; color: var(--text3); }
+.empty-feed {
+  text-align: center; padding: 24px;
+  font-size: 13px; color: var(--text3);
+}
+
+/* ─── HISTORY VIEW ──────────────────────────────────────────── */
+.history { max-width: 960px; margin: 0 auto; padding: 28px 28px 60px; }
+
+/* ─── PROFILE VIEW ──────────────────────────────────────────── */
+.profile { max-width: 720px; margin: 0 auto; padding: 28px 28px 60px; }
+
+.profile-hero {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 32px;
+  display: flex; gap: 24px; align-items: flex-start;
+  margin-bottom: 20px; position: relative; overflow: hidden;
+}
+.profile-hero::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, var(--red), transparent);
+}
+.profile-avatar {
+  width: 80px; height: 80px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--red), #5c0e1a);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 32px; font-weight: 800; color: white;
+  border: 3px solid var(--red-dim); flex-shrink: 0;
+}
+.profile-name { font-size: 24px; font-weight: 800; margin-bottom: 4px; }
+.profile-meta { font-size: 13px; color: var(--text2); margin-bottom: 16px; }
+.profile-stats { display: flex; gap: 24px; }
+.profile-stat-item { text-align: center; }
+.profile-stat-val { font-size: 22px; font-weight: 800; font-family: var(--mono); color: var(--red-light); }
+.profile-stat-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+
+.goals-list { display: flex; flex-direction: column; gap: 12px; }
+.goal-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px 20px;
+}
+.goal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.goal-name { font-size: 14px; font-weight: 600; }
+.goal-target { font-size: 12px; font-family: var(--mono); color: var(--text2); }
+.goal-current { font-size: 11px; color: var(--text2); margin-bottom: 6px; }
+.goal-bar { height: 6px; background: var(--bg3); border-radius: 3px; overflow: hidden; }
+.goal-bar-fill { height: 100%; background: var(--red); border-radius: 3px; transition: width 1s ease; }
+.goal-bar-fill.achieved { background: var(--green); }
+
+/* Settings in profile */
+.settings-list { display: flex; flex-direction: column; gap: 2px; }
+.setting-row {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 14px 18px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.setting-row:first-child { border-radius: var(--radius) var(--radius) var(--radius-sm) var(--radius-sm); }
+.setting-row:last-child { border-radius: var(--radius-sm) var(--radius-sm) var(--radius) var(--radius); }
+.setting-label { font-size: 14px; font-weight: 500; }
+.setting-val { font-size: 13px; color: var(--text2); font-family: var(--mono); }
+
+/* Toggle switch */
+.toggle {
+  width: 44px; height: 24px; background: var(--bg3);
+  border-radius: 12px; position: relative; cursor: pointer;
+  border: 1px solid var(--border2); transition: background 0.2s;
+}
+.toggle.on { background: var(--red); border-color: var(--red); }
+.toggle::after {
+  content: ''; position: absolute;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: white; top: 2px; left: 2px;
+  transition: transform 0.2s;
+}
+.toggle.on::after { transform: translateX(20px); }
+
+/* ─── BOTTOM NAV (mobile only) ──────────────────────────────── */
+.bottom-nav {
+  display: none;
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+}
+.bottom-nav-inner { display: flex; }
+.bottom-tab {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 6px 4px; cursor: pointer; border: none; background: none;
+  color: var(--text3); font-size: 10px; font-weight: 700;
+  transition: color 0.2s; letter-spacing: 0.5px;
+}
+.bottom-tab.active { color: var(--red-light); }
+.bottom-tab svg { width: 22px; height: 22px; stroke-width: 1.8; }
+
+/* ─── RESPONSIVE ────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .dash-hero { grid-template-columns: 1fr 1fr; }
+  .hcp-card { grid-column: 1 / -1; }
+  .grid-3 { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 768px) {
+  .topnav-tabs { display: none; }
+  .topnav-user { display: none; }
+  .hamburger { display: flex; }
+  .bottom-nav { display: block; }
+
+  .content { padding-top: 60px; }
+  .dashboard { padding: 16px 12px 80px; }
+  .history { padding: 16px 12px 80px; }
+  .profile { padding: 16px 12px 80px; }
+
+  .dash-hero { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .hcp-card { grid-column: 1 / -1; }
+  .hcp-number { font-size: 48px; }
+  .grid-2 { grid-template-columns: 1fr; }
+  .grid-3 { grid-template-columns: 1fr 1fr; }
+  .grid-4 { grid-template-columns: 1fr 1fr; }
+  .accuracy-cards { grid-template-columns: 1fr 1fr 1fr; }
+  .session-holes { grid-template-columns: repeat(9,1fr); }
+}
+
+@media (max-width: 480px) {
+  .grid-3 { grid-template-columns: 1fr; }
+  .accuracy-cards { grid-template-columns: 1fr 1fr 1fr; }
+  .acc-ring-wrap { width: 80px; height: 80px; }
+  .acc-pct { font-size: 18px; }
+  .session-holes { grid-template-columns: repeat(9,1fr); gap: 2px; }
+  .hole-score { font-size: 11px; }
+  .club-grid { grid-template-columns: repeat(4,1fr); }
+  .dash-hero { grid-template-columns: 1fr 1fr; gap: 8px; }
+}
+
+/* ─── ANIMATIONS ────────────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.anim { animation: fadeUp 0.4s ease forwards; }
+.anim-d1 { animation-delay: 0.05s; opacity: 0; }
+.anim-d2 { animation-delay: 0.1s; opacity: 0; }
+.anim-d3 { animation-delay: 0.15s; opacity: 0; }
+.anim-d4 { animation-delay: 0.2s; opacity: 0; }
+.anim-d5 { animation-delay: 0.25s; opacity: 0; }
+
+/* ─── UTILS ─────────────────────────────────────────────────── */
+.red { color: var(--red-light); }
+.green { color: var(--green); }
+.muted { color: var(--text2); }
+.mono { font-family: var(--mono); }
+.mt4 { margin-top: 4px; }
+.mt8 { margin-top: 8px; }
+.mt12 { margin-top: 12px; }
+.mt20 { margin-top: 20px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- ═══ TOP NAV ═══════════════════════════════════════════════ -->
+<nav class="topnav">
+  <a class="topnav-logo" href="#">
+    <div class="logo-icon">F</div>
+    FORGE
+  </a>
+  <div class="topnav-tabs">
+    <button class="topnav-tab active" onclick="showView('dashboard',this)">Dashboard</button>
+    <button class="topnav-tab" onclick="showView('practice',this)">Practice</button>
+    <button class="topnav-tab" onclick="showView('history',this)">History</button>
+    <button class="topnav-tab" onclick="showView('profile',this)">Profile</button>
+  </div>
+  <div class="topnav-user">
+    <div class="user-hcp">HCP <span class="hcp-val">7.4</span></div>
+    <div class="user-avatar">JR</div>
+  </div>
+  <button class="hamburger" onclick="openDrawer()" aria-label="Menu">
+    <div class="ham-line"></div>
+    <div class="ham-line"></div>
+    <div class="ham-line"></div>
+  </button>
+</nav>
+
+<!-- ═══ MOBILE DRAWER ════════════════════════════════════════ -->
+<div class="nav-drawer" id="navDrawer">
+  <div class="nav-drawer-backdrop" onclick="closeDrawer()"></div>
+  <div class="nav-drawer-panel">
+    <div class="drawer-header">
+      <div class="drawer-logo"><div class="logo-icon">F</div> FORGE</div>
+      <div class="drawer-user">
+        <div class="user-avatar">JR</div>
+        <div>
+          <div class="drawer-user-name">Jordan Reeves</div>
+          <div class="drawer-user-hcp">Handicap: <span style="color:var(--red-light);font-weight:700">7.4</span></div>
+        </div>
+      </div>
+    </div>
+    <ul class="drawer-tabs">
+      <li class="drawer-tab active" onclick="showView('dashboard',this,true)"><span class="drawer-tab-icon">📊</span> Dashboard</li>
+      <li class="drawer-tab" onclick="showView('practice',this,true)"><span class="drawer-tab-icon">⛳</span> Practice</li>
+      <li class="drawer-tab" onclick="showView('history',this,true)"><span class="drawer-tab-icon">📋</span> History</li>
+      <li class="drawer-tab" onclick="showView('profile',this,true)"><span class="drawer-tab-icon">👤</span> Profile</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ═══ CONTENT ═══════════════════════════════════════════════ -->
+<div class="content">
+
+<!-- ── DASHBOARD ─────────────────────────────────────────────── -->
+<div id="view-dashboard" class="view active">
+<div class="dashboard">
+
+  <!-- Hero row -->
+  <div class="dash-hero">
+    <!-- Handicap card -->
+    <div class="hcp-card anim anim-d1">
+      <div class="hcp-label">Handicap Index</div>
+      <div class="hcp-number">7<span>.4</span></div>
+      <div class="hcp-trend trend-down">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3,10 7,5 11,10"/></svg>
+        Down 1.2 pts (90 days)
+      </div>
+      <div class="hcp-sub">Based on last 20 differentials · Updated Mar 28</div>
+    </div>
+    <!-- Stat cards -->
+    <div class="stat-card anim anim-d2">
+      <div class="stat-card-label">Avg Score</div>
+      <div class="stat-card-val">79.2</div>
+      <div class="stat-card-sub">↓ 1.4 vs. 90 days ago</div>
+      <div class="stat-card-bar"><div class="stat-card-bar-fill" style="width:78%"></div></div>
+    </div>
+    <div class="stat-card anim anim-d3">
+      <div class="stat-card-label">GIR %</div>
+      <div class="stat-card-val" style="color:var(--green)">58.3%</div>
+      <div class="stat-card-sub">↑ 4.1% this month</div>
+      <div class="stat-card-bar"><div class="stat-card-bar-fill" style="width:58%"></div></div>
+    </div>
+    <div class="stat-card anim anim-d4">
+      <div class="stat-card-label">Putts / Round</div>
+      <div class="stat-card-val">29.6</div>
+      <div class="stat-card-sub">Tour avg: 28.4</div>
+      <div class="stat-card-bar"><div class="stat-card-bar-fill" style="width:65%"></div></div>
+    </div>
+  </div>
+
+  <!-- Handicap trend chart -->
+  <div class="section-header anim anim-d2">
+    <div class="section-title">Handicap Trend</div>
+    <div class="section-line"></div>
+    <div class="section-badge">90 days</div>
+  </div>
+  <div class="chart-card anim anim-d3" style="margin-bottom:0">
+    <div class="chart-title">
+      Handicap Index Over Time
+      <span class="chart-subtitle">20-score rolling average</span>
+    </div>
+    <div class="chart-wrap" style="height:180px">
+      <canvas id="hcpChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Strokes gained -->
+  <div class="section-header anim anim-d2">
+    <div class="section-title">Strokes Gained</div>
+    <div class="section-line"></div>
+    <div class="section-badge">Last 10 rounds</div>
+  </div>
+  <div class="grid-2 anim anim-d3">
+    <div class="chart-card">
+      <div class="chart-title">Strokes Gained Breakdown</div>
+      <div class="sg-list">
+        <div class="sg-row">
+          <div class="sg-row-header">
+            <div class="sg-name">Off the Tee</div>
+            <div class="sg-val sg-positive">+0.81</div>
+          </div>
+          <div class="sg-bar-wrap">
+            <div class="sg-bar-center"></div>
+            <div class="sg-bar-fill positive" style="width:20%"></div>
+          </div>
+        </div>
+        <div class="sg-row">
+          <div class="sg-row-header">
+            <div class="sg-name">Approach</div>
+            <div class="sg-val sg-positive">+0.54</div>
+          </div>
+          <div class="sg-bar-wrap">
+            <div class="sg-bar-center"></div>
+            <div class="sg-bar-fill positive" style="width:13%"></div>
+          </div>
+        </div>
+        <div class="sg-row">
+          <div class="sg-row-header">
+            <div class="sg-name">Around the Green</div>
+            <div class="sg-val sg-negative">−0.37</div>
+          </div>
+          <div class="sg-bar-wrap">
+            <div class="sg-bar-center"></div>
+            <div class="sg-bar-fill negative" style="width:9%"></div>
+          </div>
+        </div>
+        <div class="sg-row">
+          <div class="sg-row-header">
+            <div class="sg-name">Putting</div>
+            <div class="sg-val sg-negative">−0.22</div>
+          </div>
+          <div class="sg-bar-wrap">
+            <div class="sg-bar-center"></div>
+            <div class="sg-bar-fill negative" style="width:5%"></div>
+          </div>
+        </div>
+        <div class="sg-row" style="border-top:1px solid var(--border);padding-top:12px">
+          <div class="sg-row-header">
+            <div class="sg-name" style="font-weight:800;color:var(--text)">Total SG</div>
+            <div class="sg-val sg-positive" style="font-size:16px">+0.76</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">SG Radar
+        <span class="chart-subtitle">vs. +0 handicap baseline</span>
+      </div>
+      <div class="chart-wrap" style="height:200px">
+        <canvas id="sgRadar"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scoring trend -->
+  <div class="section-header anim anim-d2">
+    <div class="section-title">Scoring Trend</div>
+    <div class="section-line"></div>
+  </div>
+  <div class="chart-card anim anim-d3">
+    <div class="chart-title">
+      Score vs. Par (Last 20 Rounds)
+      <span class="chart-subtitle">18-hole rounds</span>
+    </div>
+    <div class="chart-wrap" style="height:200px">
+      <canvas id="scoringChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Accuracy -->
+  <div class="section-header anim anim-d2">
+    <div class="section-title">Accuracy</div>
+    <div class="section-line"></div>
+  </div>
+  <div class="accuracy-cards anim anim-d3">
+    <div class="acc-card">
+      <div class="acc-ring-wrap">
+        <svg class="acc-ring-svg" width="100" height="100" viewBox="0 0 100 100">
+          <circle class="acc-ring-bg" cx="50" cy="50" r="42"/>
+          <circle class="acc-ring-fill" id="ring-fir" cx="50" cy="50" r="42"
+            stroke="var(--red-light)"
+            stroke-dasharray="263.9"
+            stroke-dashoffset="263.9"/>
+        </svg>
+        <div class="acc-pct red" id="pct-fir">0%</div>
+      </div>
+      <div class="acc-label">Fairways Hit</div>
+      <div class="acc-sublabel">67% of 14 FW holes</div>
+    </div>
+    <div class="acc-card">
+      <div class="acc-ring-wrap">
+        <svg class="acc-ring-svg" width="100" height="100" viewBox="0 0 100 100">
+          <circle class="acc-ring-bg" cx="50" cy="50" r="42"/>
+          <circle class="acc-ring-fill" id="ring-gir" cx="50" cy="50" r="42"
+            stroke="var(--green)"
+            stroke-dasharray="263.9"
+            stroke-dashoffset="263.9"/>
+        </svg>
+        <div class="acc-pct green" id="pct-gir">0%</div>
+      </div>
+      <div class="acc-label">GIR %</div>
+      <div class="acc-sublabel">58.3% avg · Tour 68%</div>
+    </div>
+    <div class="acc-card">
+      <div class="acc-ring-wrap">
+        <svg class="acc-ring-svg" width="100" height="100" viewBox="0 0 100 100">
+          <circle class="acc-ring-bg" cx="50" cy="50" r="42"/>
+          <circle class="acc-ring-fill" id="ring-scr" cx="50" cy="50" r="42"
+            stroke="var(--gold)"
+            stroke-dasharray="263.9"
+            stroke-dashoffset="263.9"/>
+        </svg>
+        <div class="acc-pct" style="color:var(--gold)" id="pct-scr">0%</div>
+      </div>
+      <div class="acc-label">Scrambling</div>
+      <div class="acc-sublabel">54% · missed GIR saves</div>
+    </div>
+  </div>
+
+  <!-- Distance stats -->
+  <div class="section-header anim anim-d2">
+    <div class="section-title">Distance</div>
+    <div class="section-line"></div>
+    <div class="section-badge">Avg carry</div>
+  </div>
+  <div class="chart-card anim anim-d3">
+    <div class="chart-title">Club Carry Distances</div>
+    <div class="distance-grid">
+      <div class="dist-row">
+        <div class="dist-club">DR</div>
+        <div class="dist-bar-wrap"><div class="dist-bar driver" id="bar-dr" style="width:0%">Driver</div></div>
+        <div class="dist-yds" id="yds-dr">264</div>
+      </div>
+      <div class="dist-row">
+        <div class="dist-club">3W</div>
+        <div class="dist-bar-wrap"><div class="dist-bar driver" id="bar-3w" style="width:0%;background:linear-gradient(90deg,#9b1a2e,#6b0e20)">3-Wood</div></div>
+        <div class="dist-yds" id="yds-3w">240</div>
+      </div>
+      <div class="dist-row">
+        <div class="dist-club">5I</div>
+        <div class="dist-bar-wrap"><div class="dist-bar iron" id="bar-5i" style="width:0%">5 Iron</div></div>
+        <div class="dist-yds" id="yds-5i">195</div>
+      </div>
+      <div class="dist-row">
+        <div class="dist-club">7I</div>
+        <div class="dist-bar-wrap"><div class="dist-bar iron" id="bar-7i" style="width:0%">7 Iron</div></div>
+        <div class="dist-yds" id="yds-7i">174</div>
+      </div>
+      <div class="dist-row">
+        <div class="dist-club">9I</div>
+        <div class="dist-bar-wrap"><div class="dist-bar iron" id="bar-9i" style="width:0%">9 Iron</div></div>
+        <div class="dist-yds" id="yds-9i">152</div>
+      </div>
+      <div class="dist-row">
+        <div class="dist-club">PW</div>
+        <div class="dist-bar-wrap"><div class="dist-bar wedge" id="bar-pw" style="width:0%">Pitching W</div></div>
+        <div class="dist-yds" id="yds-pw">136</div>
+      </div>
+      <div class="dist-row">
+        <div class="dist-club">GW</div>
+        <div class="dist-bar-wrap"><div class="dist-bar wedge" id="bar-gw" style="width:0%;background:linear-gradient(90deg,#a88040,#7a5e2a)">Gap W</div></div>
+        <div class="dist-yds" id="yds-gw">119</div>
+      </div>
+      <div class="dist-row">
+        <div class="dist-club">SW</div>
+        <div class="dist-bar-wrap"><div class="dist-bar wedge" id="bar-sw" style="width:0%;background:linear-gradient(90deg,#8a6030,#5a3c14)">Sand W</div></div>
+        <div class="dist-yds" id="yds-sw">99</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dispersion + shot distribution -->
+  <div class="section-header anim anim-d2">
+    <div class="section-title">Shot Dispersion</div>
+    <div class="section-line"></div>
+    <div class="section-badge">Driver · Last 30 shots</div>
+  </div>
+  <div class="grid-2 anim anim-d3">
+    <div class="chart-card">
+      <div class="chart-title">Driver Dispersion Pattern</div>
+      <div class="dispersion-wrap">
+        <canvas id="dispersionChart" class="disp-canvas"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Scoring Distribution
+        <span class="chart-subtitle">Per hole type (last 10 rounds)</span>
+      </div>
+      <div class="chart-wrap" style="height:220px">
+        <canvas id="scoringDist"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent sessions -->
+  <div class="section-header anim anim-d2">
+    <div class="section-title">Recent Sessions</div>
+    <div class="section-line"></div>
+  </div>
+  <div class="session-list anim anim-d3">
+
+    <div class="session-card" onclick="toggleSession(this)">
+      <div class="session-card-header">
+        <div class="session-date"><div class="session-date-day">22</div><div class="session-date-mon">Mar</div></div>
+        <div class="session-info">
+          <div class="session-course">Rivercrest Golf Club</div>
+          <div class="session-meta">
+            <span>⛳ 18 holes</span>
+            <span>🕐 4h 12m</span>
+            <span>🌤 72°F</span>
+          </div>
+        </div>
+        <div class="session-score-wrap">
+          <div class="session-score under">
+            <div class="session-score-val">+4</div>
+            <div class="session-score-par">76 / Par 72</div>
+          </div>
+          <div class="session-chevron">›</div>
+        </div>
+      </div>
+      <div class="session-detail">
+        <div class="session-holes">
+          <div class="hole-cell"><div class="hole-num">1</div><div class="hole-score par">4</div></div>
+          <div class="hole-cell"><div class="hole-num">2</div><div class="hole-score birdie">3</div></div>
+          <div class="hole-cell"><div class="hole-num">3</div><div class="hole-score bogey">5</div></div>
+          <div class="hole-cell"><div class="hole-num">4</div><div class="hole-score par">3</div></div>
+          <div class="hole-cell"><div class="hole-num">5</div><div class="hole-score par">4</div></div>
+          <div class="hole-cell"><div class="hole-num">6</div><div class="hole-score birdie">4</div></div>
+          <div class="hole-cell"><div class="hole-num">7</div><div class="hole-score bogey">4</div></div>
+          <div class="hole-cell"><div class="hole-num">8</div><div class="hole-score par">3</div></div>
+          <div class="hole-cell"><div class="hole-num">9</div><div class="hole-score bogey">5</div></div>
+          <div class="hole-cell"><div class="hole-num">10</div><div class="hole-score par">4</div></div>
+          <div class="hole-cell"><div class="hole-num">11</div><div class="hole-score birdie">4</div></div>
+          <div class="hole-cell"><div class="hole-num">12</div><div class="hole-score double">6</div></div>
+          <div class="hole-cell"><div class="hole-num">13</div><div class="hole-score par">3</div></div>
+          <div class="hole-cell"><div class="hole-num">14</div><div class="hole-score par">4</div></div>
+          <div class="hole-cell"><div class="hole-num">15</div><div class="hole-score bogey">4</div></div>
+          <div class="hole-cell"><div class="hole-num">16</div><div class="hole-score par">5</div></div>
+          <div class="hole-cell"><div class="hole-num">17</div><div class="hole-score par">3</div></div>
+          <div class="hole-cell"><div class="hole-num">18</div><div class="hole-score bogey">5</div></div>
+        </div>
+        <div class="grid-4 mt12" style="gap:8px">
+          <div class="stat-card" style="padding:12px 14px">
+            <div class="stat-card-label" style="font-size:10px">FIR</div>
+            <div class="stat-card-val" style="font-size:20px">9/14</div>
+          </div>
+          <div class="stat-card" style="padding:12px 14px">
+            <div class="stat-card-label" style="font-size:10px">GIR</div>
+            <div class="stat-card-val" style="font-size:20px">10/18</div>
+          </div>
+          <div class="stat-card" style="padding:12px 14px">
+            <div class="stat-card-label" style="font-size:10px">Putts</div>
+            <div class="stat-card-val" style="font-size:20px">29</div>
+          </div>
+          <div class="stat-card" style="padding:12px 14px">
+            <div class="stat-card-label" style="font-size:10px">Differential</div>
+            <div class="stat-card-val" style="font-size:20px">7.2</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="session-card" onclick="toggleSession(this)">
+      <div class="session-card-header">
+        <div class="session-date"><div class="session-date-day">15</div><div class="session-date-mon">Mar</div></div>
+        <div class="session-info">
+          <div class="session-course">Oakmont Hills Country Club</div>
+          <div class="session-meta"><span>⛳ 18 holes</span><span>🕐 3h 58m</span><span>☁️ 65°F</span></div>
+        </div>
+        <div class="session-score-wrap">
+          <div class="session-score over">
+            <div class="session-score-val">+7</div>
+            <div class="session-score-par">79 / Par 72</div>
+          </div>
+          <div class="session-chevron">›</div>
+        </div>
+      </div>
+      <div class="session-detail">
+        <div class="session-holes">
+          <div class="hole-cell"><div class="hole-num">1</div><div class="hole-score bogey">5</div></div>
+          <div class="hole-cell"><div class="hole-num">2</div><div class="hole-score par">4</div></div>
+          <div class="hole-cell"><div class="hole-num">3</div><div class="hole-score bogey">5</div></div>
+          <div class="hole-cell"><div class="hole-num">4</div><div class="hole-score bogey">4</div></div>
+          <div class="hole-cell"><div class="hole-num">5</div><div class="hole-score birdie">4</div></div>
+          <div class="hole-cell"><div class="hole-num">6</div><div class="hole-score par">5</div></div>
+          <div class="hole-cell"><div class="hole-num">7</div><div class="hole-score double">5</div></div>
+          <div class="hole-cell"><div class="hole-num">8</div><div class="hole-score par">3</div></div>
+          <div class="hole-cell"><div class="hole-num">9</div><div class="hole-score bogey">5</div></div>
+          <div class="hole-cell"><div class="hole-num">10</div><div class="hole-score par">4</div></div>
+          <div class="hole-cell"><div class="hole-num">11</div><div class="hole-score bogey">5</div></div>
+          <div class="hole-cell"><div class="hole-num">12</div><div class="hole-score par">3</div></div>
+          <div class="hole-cell"><div class="hole-num">13</div><div class="hole-score par">4</div></div>
+          <div class="hole-cell"><div class="hole-num">14</div><div class="hole-score birdie">3</div></div>
+          <div class="hole-cell"><div class="hole-num">15</div><div class="hole-score bogey">5</div></div>
+          <div class="hole-cell"><div class="hole-num">16</div><div class="hole-score par">5</div></div>
+          <div class="hole-cell"><div class="hole-num">17</div><div class="hole-score par">3</div></div>
+          <div class="hole-cell"><div class="hole-num">18</div><div class="hole-score par">4</div></div>
+        </div>
+        <div class="grid-4 mt12" style="gap:8px">
+          <div class="stat-card" style="padding:12px 14px">
+            <div class="stat-card-label" style="font-size:10px">FIR</div>
+            <div class="stat-card-val" style="font-size:20px">8/14</div>
+          </div>
+          <div class="stat-card" style="padding:12px 14px">
+            <div class="stat-card-label" style="font-size:10px">GIR</div>
+            <div class="stat-card-val" style="font-size:20px">9/18</div>
+          </div>
+          <div class="stat-card" style="padding:12px 14px">
+            <div class="stat-card-label" style="font-size:10px">Putts</div>
+            <div class="stat-card-val" style="font-size:20px">31</div>
+          </div>
+          <div class="stat-card" style="padding:12px 14px">
+            <div class="stat-card-label" style="font-size:10px">Differential</div>
+            <div class="stat-card-val" style="font-size:20px">9.1</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="session-card" onclick="toggleSession(this)">
+      <div class="session-card-header">
+        <div class="session-date"><div class="session-date-day">08</div><div class="session-date-mon">Mar</div></div>
+        <div class="session-info">
+          <div class="session-course">Willow Creek CC</div>
+          <div class="session-meta"><span>⛳ 18 holes</span><span>🕐 4h 05m</span><span>☀️ 68°F</span></div>
+        </div>
+        <div class="session-score-wrap">
+          <div class="session-score under">
+            <div class="session-score-val">+3</div>
+            <div class="session-score-par">75 / Par 72</div>
+          </div>
+          <div class="session-chevron">›</div>
+        </div>
+      </div>
+      <div class="session-detail">
+        <div class="session-holes">
+          <div class="hole-cell"><div class="hole-num">1</div><div class="hole-score par">4</div></div>
+          <div class="hole-cell"><div class="hole-num">2</div><div class="hole-score birdie">3</div></div>
+          <div class="hole-cell"><div class="hole-num">3</div><div class="hole-score par">4</div></div>
+          <div class="hole-cell"><div class="hole-num">4</div><div class="hole-score bogey">4</div></div>
+          <div class="hole-cell"><div class="hole-num">5</div><div class="hole-score par">5</div></div>
+          <div class="hole-cell"><div class="hole-num">6</div><div class="hole-score par">4</div></div>
+          <div class="hole-cell"><div class="hole-num">7</div><div class="hole-score birdie">3</div></div>
+          <div class="hole-cell"><div class="hole-num">8</div><div class="hole-score par">3</div></div>
+          <div class="hole-cell"><div class="hole-num">9</div><div class="hole-score bogey">5</div></div>
+          <div class="hole-cell"><div class="hole-num">10</div><div class="hole-score birdie">4</div></div>
+          <div class="hole-cell"><div class="hole-num">11</div><div class="hole-score par">4</div></div>
+          <div class="hole-cell"><div class="hole-num">12</div><div class="hole-score bogey">4</div></div>
+          <div class="hole-cell"><div class="hole-num">13</div><div class="hole-score bogey">4</div></div>
+          <div class="hole-cell"><div class="hole-num">14</div><div class="hole-score par">3</div></div>
+          <div class="hole-cell"><div class="hole-num">15</div><div class="hole-score par">5</div></div>
+          <div class="hole-cell"><div class="hole-num">16</div><div class="hole-score par">4</div></div>
+          <div class="hole-cell"><div class="hole-num">17</div><div class="hole-score bogey">4</div></div>
+          <div class="hole-cell"><div class="hole-num">18</div><div class="hole-score par">4</div></div>
+        </div>
+        <div class="grid-4 mt12" style="gap:8px">
+          <div class="stat-card" style="padding:12px 14px">
+            <div class="stat-card-label" style="font-size:10px">FIR</div>
+            <div class="stat-card-val" style="font-size:20px">10/14</div>
+          </div>
+          <div class="stat-card" style="padding:12px 14px">
+            <div class="stat-card-label" style="font-size:10px">GIR</div>
+            <div class="stat-card-val" style="font-size:20px">12/18</div>
+          </div>
+          <div class="stat-card" style="padding:12px 14px">
+            <div class="stat-card-label" style="font-size:10px">Putts</div>
+            <div class="stat-card-val" style="font-size:20px">28</div>
+          </div>
+          <div class="stat-card" style="padding:12px 14px">
+            <div class="stat-card-label" style="font-size:10px">Differential</div>
+            <div class="stat-card-val" style="font-size:20px">6.8</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /session-list -->
+</div><!-- /dashboard -->
+</div><!-- /view-dashboard -->
+
+<!-- ── PRACTICE ────────────────────────────────────────────────── -->
+<div id="view-practice" class="view">
+<div class="practice">
+
+  <!-- Timer + session info -->
+  <div class="practice-header">
+    <div>
+      <div class="timer-display" id="timerDisplay">00:00</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:4px;font-family:var(--mono)">Session Timer</div>
+    </div>
+    <div class="timer-controls">
+      <button class="timer-btn start" id="timerBtn" onclick="toggleTimer()">Start</button>
+      <button class="timer-btn reset" onclick="resetTimer()">Reset</button>
+    </div>
+    <div class="session-info-row">
+      <div class="session-label">Shots Logged</div>
+      <div class="session-shots-count" id="shotCountDisplay">0</div>
+      <div class="session-shots-sub">this session</div>
+    </div>
+  </div>
+
+  <!-- Shot logger -->
+  <div class="shot-logger">
+    <div class="shot-logger-title">Log a Shot</div>
+
+    <!-- Club selector -->
+    <div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Select Club</div>
+    <div class="club-grid">
+      <button class="club-btn" onclick="selectClub(this)">DR</button>
+      <button class="club-btn" onclick="selectClub(this)">3W</button>
+      <button class="club-btn" onclick="selectClub(this)">5W</button>
+      <button class="club-btn" onclick="selectClub(this)">3I</button>
+      <button class="club-btn" onclick="selectClub(this)">4I</button>
+      <button class="club-btn" onclick="selectClub(this)">5I</button>
+      <button class="club-btn" onclick="selectClub(this)">6I</button>
+      <button class="club-btn" onclick="selectClub(this)">7I</button>
+      <button class="club-btn" onclick="selectClub(this)">8I</button>
+      <button class="club-btn" onclick="selectClub(this)">9I</button>
+      <button class="club-btn" onclick="selectClub(this)">PW</button>
+      <button class="club-btn" onclick="selectClub(this)">GW</button>
+      <button class="club-btn" onclick="selectClub(this)">SW</button>
+      <button class="club-btn" onclick="selectClub(this)">LW</button>
+      <button class="club-btn" onclick="selectClub(this)">PT</button>
+    </div>
+
+    <!-- Result -->
+    <div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Result</div>
+    <div class="result-grid">
+      <button class="result-btn fairway" onclick="selectResult(this,'fairway')">
+        <span class="result-icon">✅</span>Fairway/Green
+      </button>
+      <button class="result-btn rough" onclick="selectResult(this,'rough')">
+        <span class="result-icon">〰️</span>Rough/Fringe
+      </button>
+      <button class="result-btn hazard" onclick="selectResult(this,'hazard')">
+        <span class="result-icon">⛔</span>Hazard/OB
+      </button>
+    </div>
+
+    <!-- Distance -->
+    <div class="dist-input-row">
+      <input class="dist-input" type="number" id="distInput" placeholder="---" min="1" max="400">
+      <div class="dist-label">yards carry</div>
+    </div>
+
+    <button class="log-btn" onclick="logShot()">Log Shot</button>
+  </div>
+
+  <!-- Shot feed -->
+  <div class="shots-feed">
+    <div class="shots-feed-header">
+      <div class="shots-feed-title">Session Shots</div>
+      <button class="clear-btn" onclick="clearShots()">Clear all</button>
+    </div>
+    <div id="shotsList">
+      <div class="empty-feed" id="emptyFeed">No shots logged yet — start hitting!</div>
+    </div>
+  </div>
+
+</div>
+</div><!-- /view-practice -->
+
+<!-- ── HISTORY ─────────────────────────────────────────────────── -->
+<div id="view-history" class="view">
+<div class="history">
+
+  <div class="section-header">
+    <div class="section-title">Round History</div>
+    <div class="section-line"></div>
+    <div class="section-badge">20 rounds</div>
+  </div>
+
+  <!-- Chart -->
+  <div class="chart-card" style="margin-bottom:20px">
+    <div class="chart-title">Rolling Scoring Average (Last 20 Rounds)</div>
+    <div class="chart-wrap" style="height:200px">
+      <canvas id="historyChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Summary stats row -->
+  <div class="grid-4" style="margin-bottom:20px">
+    <div class="stat-card">
+      <div class="stat-card-label">Best Score</div>
+      <div class="stat-card-val" style="color:var(--green)">+1</div>
+      <div class="stat-card-sub">73 — Feb 12</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-label">Worst Score</div>
+      <div class="stat-card-val" style="color:var(--text2)">+14</div>
+      <div class="stat-card-sub">86 — Jan 4</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-label">Avg Putts</div>
+      <div class="stat-card-val">29.6</div>
+      <div class="stat-card-sub">Per round</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-label">Rounds Played</div>
+      <div class="stat-card-val">20</div>
+      <div class="stat-card-sub">Since Jan 1</div>
+    </div>
+  </div>
+
+  <!-- Full history list -->
+  <div class="session-list" id="fullHistoryList"></div>
+
+</div>
+</div><!-- /view-history -->
+
+<!-- ── PROFILE ─────────────────────────────────────────────────── -->
+<div id="view-profile" class="view">
+<div class="profile">
+
+  <!-- Hero -->
+  <div class="profile-hero">
+    <div class="profile-avatar">JR</div>
+    <div>
+      <div class="profile-name">Jordan Reeves</div>
+      <div class="profile-meta">Member since January 2024 · Rivercrest Golf Club</div>
+      <div class="profile-stats">
+        <div class="profile-stat-item">
+          <div class="profile-stat-val">7.4</div>
+          <div class="profile-stat-label">Handicap</div>
+        </div>
+        <div class="profile-stat-item">
+          <div class="profile-stat-val">20</div>
+          <div class="profile-stat-label">Rounds</div>
+        </div>
+        <div class="profile-stat-item">
+          <div class="profile-stat-val">79.2</div>
+          <div class="profile-stat-label">Avg Score</div>
+        </div>
+        <div class="profile-stat-item">
+          <div class="profile-stat-val">264</div>
+          <div class="profile-stat-label">Avg Drive</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Goals -->
+  <div class="section-header">
+    <div class="section-title">Goals</div>
+    <div class="section-line"></div>
+  </div>
+  <div class="goals-list" style="margin-bottom:20px">
+    <div class="goal-card">
+      <div class="goal-header">
+        <div class="goal-name">Reach Handicap 5.0</div>
+        <div class="goal-target">Target: Dec 2025</div>
+      </div>
+      <div class="goal-current">Current: 7.4 → Need: 2.4 more improvement</div>
+      <div class="goal-bar"><div class="goal-bar-fill" style="width:54%"></div></div>
+    </div>
+    <div class="goal-card">
+      <div class="goal-header">
+        <div class="goal-name">Average Under 78</div>
+        <div class="goal-target">Target: Jun 2025</div>
+      </div>
+      <div class="goal-current">Current: 79.2 → 1.2 strokes to go</div>
+      <div class="goal-bar"><div class="goal-bar-fill" style="width:40%"></div></div>
+    </div>
+    <div class="goal-card">
+      <div class="goal-header">
+        <div class="goal-name">60% GIR Consistency</div>
+        <div class="goal-target">Target: Apr 2025</div>
+      </div>
+      <div class="goal-current">Current: 58.3% → Almost there</div>
+      <div class="goal-bar"><div class="goal-bar-fill achieved" style="width:88%"></div></div>
+    </div>
+    <div class="goal-card">
+      <div class="goal-header">
+        <div class="goal-name">Drive 270+ yards avg</div>
+        <div class="goal-target">Target: May 2025</div>
+      </div>
+      <div class="goal-current">Current: 264 → 6 yards to gain</div>
+      <div class="goal-bar"><div class="goal-bar-fill" style="width:70%"></div></div>
+    </div>
+  </div>
+
+  <!-- Settings -->
+  <div class="section-header">
+    <div class="section-title">Settings</div>
+    <div class="section-line"></div>
+  </div>
+  <div class="settings-list">
+    <div class="setting-row">
+      <div class="setting-label">Home Club</div>
+      <div class="setting-val">Rivercrest GC</div>
+    </div>
+    <div class="setting-row">
+      <div class="setting-label">Handicap Org</div>
+      <div class="setting-val">USGA / WHS</div>
+    </div>
+    <div class="setting-row">
+      <div class="setting-label">Distance Units</div>
+      <div class="setting-val">Yards</div>
+    </div>
+    <div class="setting-row">
+      <div class="setting-label">Share Stats</div>
+      <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+    </div>
+    <div class="setting-row">
+      <div class="setting-label">Round Reminders</div>
+      <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+    </div>
+    <div class="setting-row">
+      <div class="setting-label">Dark Mode</div>
+      <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+    </div>
+  </div>
+
+  <div style="margin-top:32px;text-align:center">
+    <div style="font-size:11px;color:var(--text3)">FORGE by RYP Golf · Version 2.1.0</div>
+    <div style="font-size:11px;color:var(--text3);margin-top:4px">© 2025 RYP Golf. All rights reserved.</div>
+  </div>
+
+</div>
+</div><!-- /view-profile -->
+
+</div><!-- /content -->
+
+<!-- ═══ BOTTOM NAV (mobile) ════════════════════════════════════ -->
+<nav class="bottom-nav">
+  <div class="bottom-nav-inner">
+    <button class="bottom-tab active" id="btab-dashboard" onclick="showView('dashboard',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+      Dashboard
+    </button>
+    <button class="bottom-tab" id="btab-practice" onclick="showView('practice',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+      Practice
+    </button>
+    <button class="bottom-tab" id="btab-history" onclick="showView('history',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 12h18M3 6h18M3 18h12"/></svg>
+      History
+    </button>
+    <button class="bottom-tab" id="btab-profile" onclick="showView('profile',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+      Profile
+    </button>
+  </div>
+</nav>
+
+</div><!-- /app -->
+
+<script>
+// ══ VIEW SWITCHING ══════════════════════════════════════════════
+let currentView = 'dashboard';
+
+function showView(name, el, fromDrawer) {
+  // hide all views
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+
+  // update desktop tabs
+  document.querySelectorAll('.topnav-tab').forEach(t => t.classList.remove('active'));
+  const desktopTab = [...document.querySelectorAll('.topnav-tab')].find(t =>
+    t.textContent.toLowerCase().includes(name === 'dashboard' ? 'dash' : name)
+  );
+  if (desktopTab) desktopTab.classList.add('active');
+
+  // update drawer tabs
+  document.querySelectorAll('.drawer-tab').forEach(t => t.classList.remove('active'));
+
+  // update bottom tabs
+  document.querySelectorAll('.bottom-tab').forEach(t => t.classList.remove('active'));
+  const btab = document.getElementById('btab-' + name);
+  if (btab) btab.classList.add('active');
+
+  // mark the clicked element active (handles both drawer + bottom)
+  if (el && el.classList) el.classList.add('active');
+
+  currentView = name;
+  if (fromDrawer) closeDrawer();
+
+  // lazy init charts for history view
+  if (name === 'history' && !historyChartInit) initHistoryChart();
+}
+
+// ══ DRAWER ══════════════════════════════════════════════════════
+function openDrawer() { document.getElementById('navDrawer').classList.add('open'); }
+function closeDrawer() { document.getElementById('navDrawer').classList.remove('open'); }
+
+// ══ SESSION CARDS ════════════════════════════════════════════════
+function toggleSession(card) {
+  card.classList.toggle('open');
+}
+
+// ══ TIMER ════════════════════════════════════════════════════════
+let timerInterval = null;
+let timerSeconds = 0;
+let timerRunning = false;
+
+function pad(n) { return String(n).padStart(2,'0'); }
+
+function updateTimerDisplay() {
+  const h = Math.floor(timerSeconds / 3600);
+  const m = Math.floor((timerSeconds % 3600) / 60);
+  const s = timerSeconds % 60;
+  document.getElementById('timerDisplay').textContent =
+    h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+}
+
+function toggleTimer() {
+  if (timerRunning) {
+    clearInterval(timerInterval);
+    timerRunning = false;
+    document.getElementById('timerBtn').textContent = 'Resume';
+  } else {
+    timerInterval = setInterval(() => { timerSeconds++; updateTimerDisplay(); }, 1000);
+    timerRunning = true;
+    document.getElementById('timerBtn').textContent = 'Pause';
+  }
+}
+
+function resetTimer() {
+  clearInterval(timerInterval);
+  timerRunning = false;
+  timerSeconds = 0;
+  updateTimerDisplay();
+  document.getElementById('timerBtn').textContent = 'Start';
+}
+
+// ══ SHOT LOGGER ══════════════════════════════════════════════════
+let selectedClub = null;
+let selectedResult = null;
+let shots = [];
+
+function selectClub(btn) {
+  document.querySelectorAll('.club-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  selectedClub = btn.textContent.trim();
+}
+
+function selectResult(btn, result) {
+  document.querySelectorAll('.result-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  selectedResult = result;
+}
+
+function logShot() {
+  const dist = parseInt(document.getElementById('distInput').value);
+  if (!selectedClub) { flashError('Select a club first'); return; }
+  if (!selectedResult) { flashError('Select a result'); return; }
+  if (!dist || dist < 1 || dist > 400) { flashError('Enter a valid distance'); return; }
+
+  const shot = {
+    club: selectedClub,
+    result: selectedResult,
+    dist: dist,
+    time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})
+  };
+  shots.unshift(shot);
+  renderShots();
+  document.getElementById('shotCountDisplay').textContent = shots.length;
+  document.getElementById('distInput').value = '';
+}
+
+function flashError(msg) {
+  const btn = document.querySelector('.log-btn');
+  btn.textContent = msg;
+  btn.style.background = '#8b1a2e';
+  setTimeout(() => { btn.textContent = 'Log Shot'; btn.style.background = ''; }, 1500);
+}
+
+function clearShots() {
+  shots = [];
+  renderShots();
+  document.getElementById('shotCountDisplay').textContent = 0;
+}
+
+function renderShots() {
+  const list = document.getElementById('shotsList');
+  const empty = document.getElementById('emptyFeed');
+  if (shots.length === 0) {
+    empty.style.display = 'block';
+    list.innerHTML = '';
+    list.appendChild(empty);
+    return;
+  }
+  empty.style.display = 'none';
+  list.innerHTML = shots.map(s => `
+    <div class="shot-item">
+      <div class="shot-club-tag">${s.club}</div>
+      <div>
+        <div class="shot-dist">${s.dist}<span class="shot-dist-unit"> yds</span></div>
+      </div>
+      <div style="flex:1"></div>
+      <div class="shot-time">${s.time}</div>
+      <div class="shot-result-dot ${s.result}"></div>
+    </div>
+  `).join('');
+}
+
+// ══ CHARTS ═══════════════════════════════════════════════════════
+Chart.defaults.color = '#8b949e';
+Chart.defaults.borderColor = 'rgba(255,255,255,0.06)';
+Chart.defaults.font.family = "'DM Sans', sans-serif";
+
+const RED = '#C41E3A';
+const RED_LIGHT = '#e8294d';
+const GREEN = '#2ea043';
+const GOLD = '#C9A84C';
+const BLUE = '#388bfd';
+const YELLOW = '#d29922';
+
+// Handicap trend
+function initHcpChart() {
+  const labels = ['Jan 6','Jan 14','Jan 22','Jan 30','Feb 5','Feb 12','Feb 19','Feb 26','Mar 5','Mar 12','Mar 19','Mar 28'];
+  const data =   [9.2, 8.9, 9.1, 8.7, 8.4, 8.1, 8.3, 8.0, 7.9, 7.8, 7.6, 7.4];
+  new Chart(document.getElementById('hcpChart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        data,
+        borderColor: RED_LIGHT,
+        backgroundColor: 'rgba(196,30,58,0.12)',
+        borderWidth: 2.5,
+        pointRadius: 4,
+        pointBackgroundColor: RED_LIGHT,
+        pointBorderColor: '#0d1117',
+        pointBorderWidth: 2,
+        fill: true,
+        tension: 0.4
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` HCP ${ctx.raw}` } } },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { font: { size: 11 } } },
+        y: { reverse: true, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { font: { size: 11 }, callback: v => v.toFixed(1) }, min: 6, max: 10 }
+      }
+    }
+  });
+}
+
+// SG Radar
+function initSgRadar() {
+  new Chart(document.getElementById('sgRadar'), {
+    type: 'radar',
+    data: {
+      labels: ['Off Tee', 'Approach', 'Around\nGreen', 'Putting', 'Long\nGame'],
+      datasets: [
+        {
+          label: 'Jordan Reeves',
+          data: [0.81, 0.54, -0.37, -0.22, 0.72],
+          borderColor: RED_LIGHT,
+          backgroundColor: 'rgba(196,30,58,0.15)',
+          pointBackgroundColor: RED_LIGHT,
+          borderWidth: 2
+        },
+        {
+          label: '+0 Baseline',
+          data: [0, 0, 0, 0, 0],
+          borderColor: 'rgba(255,255,255,0.2)',
+          backgroundColor: 'rgba(255,255,255,0.04)',
+          pointBackgroundColor: 'rgba(255,255,255,0.3)',
+          borderWidth: 1.5,
+          borderDash: [4,4]
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: true, position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } },
+      scales: {
+        r: {
+          grid: { color: 'rgba(255,255,255,0.07)' },
+          angleLines: { color: 'rgba(255,255,255,0.07)' },
+          pointLabels: { font: { size: 11 }, color: '#8b949e' },
+          ticks: { display: false },
+          min: -1.5, max: 1.5
+        }
+      }
+    }
+  });
+}
+
+// Scoring trend
+function initScoringChart() {
+  const labels = Array.from({length:20}, (_,i) => `R${i+1}`);
+  const data = [82,84,80,79,86,78,81,77,80,79,83,78,76,80,79,77,78,76,79,76];
+  new Chart(document.getElementById('scoringChart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Score',
+          data,
+          borderColor: BLUE,
+          backgroundColor: 'rgba(56,139,253,0.08)',
+          borderWidth: 2,
+          pointRadius: 3,
+          pointBackgroundColor: BLUE,
+          fill: true,
+          tension: 0.3
+        },
+        {
+          label: 'Rolling Avg',
+          data: data.map((_,i,arr) => i < 4 ? null : arr.slice(i-4,i+1).reduce((a,b)=>a+b,0)/5),
+          borderColor: RED_LIGHT,
+          borderWidth: 2,
+          pointRadius: 0,
+          borderDash: [6,3],
+          fill: false,
+          tension: 0.4
+        },
+        {
+          label: 'Par',
+          data: Array(20).fill(72),
+          borderColor: 'rgba(255,255,255,0.15)',
+          borderWidth: 1,
+          pointRadius: 0,
+          borderDash: [3,5],
+          fill: false
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+        tooltip: { callbacks: { label: ctx => ctx.dataset.label === 'Par' ? ' Par 72' : ` ${ctx.raw}` } }
+      },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { font: { size: 10 } } },
+        y: { reverse: false, min: 70, max: 90, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { font: { size: 11 } } }
+      }
+    }
+  });
+}
+
+// Dispersion chart (pure Canvas)
+function initDispersionChart() {
+  const canvas = document.getElementById('dispersionChart');
+  const ctx = canvas.getContext('2d');
+
+  function draw() {
+    const W = canvas.offsetWidth;
+    const H = canvas.offsetHeight;
+    canvas.width = W;
+    canvas.height = H;
+    const cx = W / 2;
+    const cy = H * 0.85;
+
+    // Background gradient (fairway)
+    const grad = ctx.createRadialGradient(cx, cy * 0.3, 0, cx, cy * 0.3, H * 0.9);
+    grad.addColorStop(0, 'rgba(46,160,67,0.06)');
+    grad.addColorStop(0.5, 'rgba(46,160,67,0.04)');
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+
+    // Aim line
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4,6]);
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx, 8); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Yardage rings
+    const maxYds = 300;
+    const scale = (H * 0.82) / maxYds;
+    [100,150,200,250,300].forEach(y => {
+      const r = y * scale * 0.18;
+      const dy = y * scale;
+      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(cx, cy, dy * 0.22, Math.PI, 0);
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,0.2)';
+      ctx.font = '9px DM Mono, monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText(y + 'y', cx + dy * 0.22 + 4, cy - 2);
+    });
+
+    // Shot scatter (demo data)
+    const shots = [
+      {x:-18,y:264},{x:5,y:271},{x:22,y:258},{x:-8,y:255},{x:30,y:268},
+      {x:-25,y:246},{x:12,y:274},{x:-5,y:262},{x:38,y:252},{x:-12,y:269},
+      {x:8,y:266},{x:-30,y:241},{x:18,y:258},{x:-2,y:272},{x:25,y:265},
+      {x:-40,y:230},{x:15,y:260},{x:-8,y:268},{x:6,y:271},{x:-15,y:257},
+      {x:33,y:263},{x:-22,y:249},{x:10,y:276},{x:-35,y:238},{x:20,y:261},
+      {x:4,y:270},{x:-10,y:265},{x:28,y:255},{x:-18,y:260},{x:42,y:248}
+    ];
+
+    const avgY = shots.reduce((s,p)=>s+p.y,0)/shots.length;
+    const avgX = shots.reduce((s,p)=>s+p.x,0)/shots.length;
+
+    const toCanvas = (sx, sy) => ({
+      x: cx + sx * (W / 180),
+      y: cy - (sy / maxYds) * (H * 0.88)
+    });
+
+    // Ellipse for dispersion zone
+    const cpt = toCanvas(avgX, avgY);
+    ctx.save();
+    ctx.translate(cpt.x, cpt.y);
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 60 * (W/400), 30 * (H/300), 0, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(196,30,58,0.08)';
+    ctx.strokeStyle = 'rgba(196,30,58,0.25)';
+    ctx.lineWidth = 1.5;
+    ctx.fill(); ctx.stroke();
+    ctx.restore();
+
+    // Individual shots
+    shots.forEach(s => {
+      const p = toCanvas(s.x, s.y);
+      const inFairway = Math.abs(s.x) < 25;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 4, 0, Math.PI*2);
+      ctx.fillStyle = inFairway ? 'rgba(46,160,67,0.85)' : 'rgba(196,30,58,0.75)';
+      ctx.fill();
+      ctx.strokeStyle = '#0d1117';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    });
+
+    // Center/avg crosshair
+    const avgPt = toCanvas(avgX, avgY);
+    ctx.strokeStyle = 'rgba(201,168,76,0.8)';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(avgPt.x-8,avgPt.y); ctx.lineTo(avgPt.x+8,avgPt.y); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(avgPt.x,avgPt.y-8); ctx.lineTo(avgPt.x,avgPt.y+8); ctx.stroke();
+
+    // Label
+    ctx.fillStyle = 'rgba(201,168,76,0.9)';
+    ctx.font = 'bold 10px DM Sans, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(`avg ${Math.round(avgY)}y`, avgPt.x, avgPt.y - 14);
+  }
+
+  draw();
+  window.addEventListener('resize', draw);
+}
+
+// Scoring distribution (bar)
+function initScoringDist() {
+  new Chart(document.getElementById('scoringDist'), {
+    type: 'bar',
+    data: {
+      labels: ['Eagles', 'Birdies', 'Pars', 'Bogeys', 'Doubles', 'Triples+'],
+      datasets: [{
+        data: [0, 18, 124, 52, 14, 2],
+        backgroundColor: ['#f0c040', RED_LIGHT, 'rgba(255,255,255,0.2)', YELLOW, '#8b949e', '#484f58'],
+        borderRadius: 4,
+        borderSkipped: false
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { font: { size: 11 } } }
+      }
+    }
+  });
+}
+
+// History chart
+let historyChartInit = false;
+function initHistoryChart() {
+  historyChartInit = true;
+  const labels = ['Jan 4','Jan 10','Jan 18','Jan 25','Feb 1','Feb 8','Feb 12','Feb 18','Feb 24','Mar 1','Mar 5','Mar 8','Mar 15','Mar 22','Mar 28'];
+  const data = [86,83,81,80,82,79,73,78,80,79,77,75,79,76,77];
+  new Chart(document.getElementById('historyChart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Score',
+          data,
+          borderColor: BLUE,
+          backgroundColor: 'rgba(56,139,253,0.1)',
+          borderWidth: 2, pointRadius: 4,
+          pointBackgroundColor: BLUE, fill: true, tension: 0.3
+        },
+        {
+          label: 'Par',
+          data: Array(labels.length).fill(72),
+          borderColor: 'rgba(255,255,255,0.15)',
+          borderWidth: 1, pointRadius: 0, borderDash: [4,6], fill: false
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: true, position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { font: { size: 10 } } },
+        y: { min: 70, max: 90, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { font: { size: 11 } } }
+      }
+    }
+  });
+  buildFullHistory();
+}
+
+// ══ HISTORY LIST ══════════════════════════════════════════════════
+const historyData = [
+  { day:'28', mon:'Mar', course:'Rivercrest Golf Club',         score:'+5', raw:77, par:72, holes:18, time:'4h 02m', fir:'8/14', gir:'10/18', putts:30, diff:7.8 },
+  { day:'22', mon:'Mar', course:'Rivercrest Golf Club',         score:'+4', raw:76, par:72, holes:18, time:'4h 12m', fir:'9/14', gir:'10/18', putts:29, diff:7.2 },
+  { day:'15', mon:'Mar', course:'Oakmont Hills CC',             score:'+7', raw:79, par:72, holes:18, time:'3h 58m', fir:'8/14', gir:'9/18', putts:31, diff:9.1 },
+  { day:'08', mon:'Mar', course:'Willow Creek CC',              score:'+3', raw:75, par:72, holes:18, time:'4h 05m', fir:'10/14', gir:'12/18', putts:28, diff:6.8 },
+  { day:'01', mon:'Mar', course:'Rivercrest Golf Club',         score:'+6', raw:78, par:72, holes:18, time:'4h 20m', fir:'7/14', gir:'9/18', putts:30, diff:8.4 },
+  { day:'24', mon:'Feb', course:'Pines Country Club',           score:'+8', raw:80, par:72, holes:18, time:'4h 10m', fir:'8/14', gir:'8/18', putts:32, diff:9.8 },
+  { day:'18', mon:'Feb', course:'Rivercrest Golf Club',         score:'+6', raw:78, par:72, holes:18, time:'4h 08m', fir:'9/14', gir:'11/18', putts:29, diff:8.2 },
+  { day:'12', mon:'Feb', course:'Highland Ridge GC',            score:'+1', raw:73, par:72, holes:18, time:'4h 00m', fir:'11/14', gir:'13/18', putts:27, diff:5.1 },
+  { day:'08', mon:'Feb', course:'Rivercrest Golf Club',         score:'+7', raw:79, par:72, holes:18, time:'4h 15m', fir:'7/14', gir:'10/18', putts:31, diff:9.0 },
+  { day:'01', mon:'Feb', course:'Willow Creek CC',              score:'+10', raw:82, par:72, holes:18, time:'4h 25m', fir:'6/14', gir:'8/18', putts:33, diff:11.2 },
+];
+
+function buildFullHistory() {
+  const list = document.getElementById('fullHistoryList');
+  list.innerHTML = historyData.map((r,i) => `
+    <div class="session-card" onclick="toggleSession(this)">
+      <div class="session-card-header">
+        <div class="session-date">
+          <div class="session-date-day">${r.day}</div>
+          <div class="session-date-mon">${r.mon}</div>
+        </div>
+        <div class="session-info">
+          <div class="session-course">${r.course}</div>
+          <div class="session-meta">
+            <span>⛳ ${r.holes} holes</span>
+            <span>🕐 ${r.time}</span>
+          </div>
+        </div>
+        <div class="session-score-wrap">
+          <div class="session-score ${parseInt(r.score) <= 3 ? 'under' : 'over'}">
+            <div class="session-score-val">${r.score}</div>
+            <div class="session-score-par">${r.raw} / Par ${r.par}</div>
+          </div>
+          <div class="session-chevron">›</div>
+        </div>
+      </div>
+      <div class="session-detail">
+        <div class="grid-4 mt12" style="gap:8px">
+          <div class="stat-card" style="padding:12px 14px">
+            <div class="stat-card-label" style="font-size:10px">FIR</div>
+            <div class="stat-card-val" style="font-size:20px">${r.fir}</div>
+          </div>
+          <div class="stat-card" style="padding:12px 14px">
+            <div class="stat-card-label" style="font-size:10px">GIR</div>
+            <div class="stat-card-val" style="font-size:20px">${r.gir}</div>
+          </div>
+          <div class="stat-card" style="padding:12px 14px">
+            <div class="stat-card-label" style="font-size:10px">Putts</div>
+            <div class="stat-card-val" style="font-size:20px">${r.putts}</div>
+          </div>
+          <div class="stat-card" style="padding:12px 14px">
+            <div class="stat-card-label" style="font-size:10px">Differential</div>
+            <div class="stat-card-val" style="font-size:20px">${r.diff}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ══ ACCURACY RINGS (animated) ════════════════════════════════════
+function animateRing(id, pctId, pct, delay) {
+  const circ = 263.9;
+  const offset = circ - (pct / 100) * circ;
+  setTimeout(() => {
+    document.getElementById(id).style.strokeDashoffset = offset;
+    let current = 0;
+    const target = Math.round(pct);
+    const step = target / 40;
+    const iv = setInterval(() => {
+      current += step;
+      if (current >= target) { current = target; clearInterval(iv); }
+      document.getElementById(pctId).textContent = Math.round(current) + '%';
+    }, 25);
+  }, delay);
+}
+
+// ══ DISTANCE BARS (animated) ═════════════════════════════════════
+function animateBars() {
+  const bars = [
+    { id:'bar-dr', pct: 95 },
+    { id:'bar-3w', pct: 86 },
+    { id:'bar-5i', pct: 70 },
+    { id:'bar-7i', pct: 62 },
+    { id:'bar-9i', pct: 54 },
+    { id:'bar-pw', pct: 49 },
+    { id:'bar-gw', pct: 43 },
+    { id:'bar-sw', pct: 35 },
+  ];
+  bars.forEach((b, i) => {
+    setTimeout(() => {
+      const el = document.getElementById(b.id);
+      if (el) el.style.width = b.pct + '%';
+    }, 400 + i * 80);
+  });
+}
+
+// ══ INIT ══════════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  initHcpChart();
+  initSgRadar();
+  initScoringChart();
+  initDispersionChart();
+  initScoringDist();
+  animateBars();
+
+  setTimeout(() => {
+    animateRing('ring-fir', 'pct-fir', 67, 0);
+    animateRing('ring-gir', 'pct-gir', 58, 150);
+    animateRing('ring-scr', 'pct-scr', 54, 300);
+  }, 500);
+});
+</script>
+</body>
+</html>

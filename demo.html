@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1a3c2a">
-<title>KNOWN Demo — Willow Creek CC</title>
+<title>KNOWN Demo — Woodmont CC</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -69,6 +69,12 @@ input{font-family:inherit}
 .recall-input:focus{border-color:var(--gold)}
 .recall-input.correct{border-color:var(--correct);background:#e8f5e9;color:var(--correct)}
 .recall-input.wrong{border-color:var(--wrong);background:#fce4e4;color:var(--wrong)}
+.btn-tap-continue{display:block;width:100%;margin-top:16px;padding:14px;background:var(--green);color:#fff;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;letter-spacing:.02em}
+.btn-tap-continue:active{opacity:.85}
+.wrong-reveal{display:flex;flex-direction:column;align-items:center;margin-top:16px;padding:16px;background:#fff;border-radius:12px;border:2px solid var(--correct)}
+.wrong-reveal-photo{width:80px;height:80px;border-radius:50%;overflow:hidden;border:3px solid var(--correct);margin-bottom:8px}
+.wrong-reveal-photo img{width:100%;height:100%;object-fit:cover}
+.wrong-reveal-name{font-size:1.1rem;font-weight:700;color:var(--correct);margin-bottom:12px}
 .recall-actions{display:flex;gap:8px;width:100%}
 .recall-actions button{flex:1;padding:10px;border-radius:10px;font-size:.8rem;font-weight:700}
 .btn-submit{background:var(--green);color:#fff}
@@ -233,7 +239,7 @@ input{font-family:inherit}
   <div class="modal">
     <div class="modal-logo">KNOWN</div>
     <h2>Welcome to the Demo</h2>
-    <p class="modal-sub">Experience how KNOWN helps staff learn member names at <strong>Willow Creek Country Club</strong></p>
+    <p class="modal-sub">Experience how KNOWN helps staff learn member names at <strong>Woodmont Country Club</strong></p>
     <input type="text" id="userName" placeholder="Enter your first name" autocomplete="off" autofocus>
     <button onclick="startDemo()">Start Learning</button>
     <p class="modal-note">This demo uses fictional members. Your progress is saved locally.<br>Visit <a href="https://known.golf" target="_blank" style="color:var(--gold);font-weight:700">known.golf</a> to get KNOWN for your club.</p>
@@ -286,8 +292,9 @@ var MEMBERS = [
 ];
 
 /* Generate photo URLs */
+var CAMERA_PLACEHOLDER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'%3E%3Crect width='140' height='140' fill='%23e8e4dc'/%3E%3Cg transform='translate(70,62)'%3E%3Cellipse cx='0' cy='0' rx='18' ry='16' fill='none' stroke='%23a09880' stroke-width='3'/%3E%3Ccircle cx='0' cy='0' r='8' fill='%23a09880'/%3E%3Crect x='-26' y='-22' width='52' height='38' rx='5' fill='none' stroke='%23a09880' stroke-width='3'/%3E%3Cpath d='M-26,-22 L-18,-32 L18,-32 L26,-22' fill='none' stroke='%23a09880' stroke-width='3'/%3E%3C/g%3E%3Ctext x='70' y='110' text-anchor='middle' font-family='sans-serif' font-size='11' fill='%23a09880'%3EAdd Photo%3C/text%3E%3C/svg%3E";
 MEMBERS.forEach(function(m){
-  m.photo = "https://api.dicebear.com/7.x/initials/svg?seed=" + encodeURIComponent(m.full) + "&backgroundColor=1a3c2a,2d8a4e,c9a84c,5a9e6f,8e44ad,c0392b,2980b9,e67e22&backgroundType=solid";
+  m.photo = CAMERA_PLACEHOLDER;
 });
 
 /* Sort by rounds descending for tier assignment */
@@ -450,13 +457,13 @@ function nextQuiz(){
     html += '<div class="quiz-prompt">Who is this member?</div>';
     html += '<div class="choices">';
     currentChoices.forEach(function(c, i){
-      html += '<button class="choice-btn" onclick="answerMC(' + i + ')">' + c.full + '</button>';
+      html += '<button class="choice-btn" onclick="answerMC(' + i + ', event)">' + c.full + '</button>';
     });
     html += '</div>';
     document.getElementById("quizArea").innerHTML = html;
   } else {
     var html = '<div class="quiz-tier-label">' + tierLabel + ' &bull; Box ' + box + '</div>';
-    html += '<div class="quiz-photo"><img src="' + m.photo + '" alt="Member photo" loading="eager"></div>';
+    html += '<div class="quiz-photo" onclick="nextQuiz()" style="cursor:pointer" title="Tap to advance"><img src="' + m.photo + '" alt="Member photo" loading="eager"></div>';
     html += '<div class="quiz-prompt">Type this member\'s name</div>';
     html += '<div class="recall-area">';
     html += '<input type="text" class="recall-input" id="recallInput" placeholder="Enter name..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">';
@@ -474,7 +481,8 @@ function nextQuiz(){
   updateScoreBar();
 }
 
-function answerMC(idx){
+function answerMC(idx, event){
+  if(event) event.stopPropagation();
   if(answered) return;
   answered = true;
   var chosen = currentChoices[idx];
@@ -486,19 +494,29 @@ function answerMC(idx){
   if(isCorrect){
     btns[idx].classList.add("correct");
     recordAnswer(correct, true);
-    setTimeout(nextQuiz, 800);
+    // Show "Tap to continue" button instead of auto-advancing
+    var tapBtn = document.createElement("button");
+    tapBtn.className = "btn-tap-continue";
+    tapBtn.innerHTML = "Tap to continue &rarr;";
+    tapBtn.onclick = function(e){ e.stopPropagation(); nextQuiz(); };
+    document.getElementById("quizArea").appendChild(tapBtn);
   } else {
     btns[idx].classList.add("wrong");
-    // Reveal correct
+    // Reveal correct answer in green
     currentChoices.forEach(function(c, i){
       if(c.id === correct.id) btns[i].classList.add("reveal");
     });
     recordAnswer(correct, false);
-    // Tap to continue
-    document.getElementById("quizArea").addEventListener("click", function handler(){
-      document.getElementById("quizArea").removeEventListener("click", handler);
-      nextQuiz();
-    }, {once: true});
+    // Show correct member photo and name, then "Tap to continue" button
+    var revealDiv = document.createElement("div");
+    revealDiv.className = "wrong-reveal";
+    revealDiv.innerHTML = '<div class="wrong-reveal-photo"><img src="' + correct.photo + '" alt="' + correct.full + '"></div><div class="wrong-reveal-name">' + correct.full + '</div>';
+    var tapBtn = document.createElement("button");
+    tapBtn.className = "btn-tap-continue";
+    tapBtn.innerHTML = "Tap to continue &rarr;";
+    tapBtn.onclick = function(e){ e.stopPropagation(); nextQuiz(); };
+    revealDiv.appendChild(tapBtn);
+    document.getElementById("quizArea").appendChild(revealDiv);
   }
 }
 
@@ -724,7 +742,7 @@ function renderLeaderboard(){
 
 function shareScore(){
   var pct = state.totalAnswered ? Math.round(state.totalCorrect / state.totalAnswered * 100) : 0;
-  var text = "I scored " + pct + "% on the KNOWN demo at Willow Creek CC! Try it: known.golf/demo";
+  var text = "I scored " + pct + "% on the KNOWN demo at Woodmont CC! Try it: known.golf/demo";
   if(navigator.share){
     navigator.share({title:"KNOWN Score", text: text}).catch(function(){});
   } else if(navigator.clipboard){
