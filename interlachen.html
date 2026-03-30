@@ -370,6 +370,105 @@
     }
     .continue-btn:active { background: rgba(201,168,76,0.12); }
 
+    /* ─── TAP ANYWHERE MESSAGE ──────────────────── */
+    .tap-anywhere-msg {
+      margin-top: 1.25rem;
+      text-align: center;
+      font-size: 13px;
+      color: var(--gold);
+      letter-spacing: 1.5px;
+      font-weight: 700;
+      opacity: 0.85;
+      animation: tapPulse 1.5s ease-in-out infinite;
+    }
+    @keyframes tapPulse {
+      0%, 100% { opacity: 0.85; }
+      50% { opacity: 0.5; }
+    }
+
+    /* ─── ASSIGNED LISTS ────────────────────────── */
+    .assigned-list-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.1rem 1.2rem;
+      margin-bottom: 0.85rem;
+      width: 100%;
+    }
+    .assigned-list-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+    .assigned-list-name {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .deadline-badge {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      background: rgba(201,168,76,0.15);
+      color: var(--gold);
+      white-space: nowrap;
+    }
+    .deadline-badge.urgent {
+      background: rgba(220,60,60,0.15);
+      color: #e85454;
+    }
+    .assigned-list-meta {
+      font-size: 0.8rem;
+      color: var(--gray-400);
+      margin-bottom: 0.6rem;
+    }
+    .assigned-progress-bar {
+      height: 6px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 0.7rem;
+    }
+    .assigned-progress-fill {
+      height: 100%;
+      border-radius: 3px;
+      background: linear-gradient(90deg, var(--gold), #e0c96a);
+      transition: width 0.6s ease;
+    }
+    .assigned-list-actions {
+      display: flex;
+      gap: 0.6rem;
+    }
+    .test-btn {
+      flex: 1;
+      padding: 0.65rem;
+      background: var(--gold);
+      border: none;
+      border-radius: 12px;
+      color: var(--bg-main);
+      font-size: 0.85rem;
+      font-weight: 800;
+      cursor: pointer;
+      letter-spacing: 0.5px;
+      transition: opacity 0.15s;
+    }
+    .test-btn:active { opacity: 0.8; }
+    .view-btn {
+      padding: 0.65rem 1rem;
+      background: transparent;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      color: var(--gray-400);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .view-btn:active { border-color: var(--gold); color: var(--gold); }
+
     /* ─── END / SCORE SCREEN ────────────────────── */
     .score-end {
       text-align: center;
@@ -765,46 +864,46 @@
 // MEMBERS DATA — Top 40 by rounds played at Interlachen
 // ────────────────────────────────────────────────────
 var MEMBERS = [
-  { id:1,  name:"Andrew Tufford",     g:"men",   p:10, hcp:4.2,  rounds:89, note:"Low-handicap regular; prefers 6:30 AM tee. Competes in club championship. Member since 2008." },
-  { id:2,  name:"Keith Carnish",      g:"men",   p:15, hcp:8.1,  rounds:82, note:"Saturday morning regular. Strong iron player. Plays with the Wednesday group. Member since 2011." },
-  { id:3,  name:"Helenbeth Reynolds", g:"women", p:5,  hcp:14.5, rounds:78, note:"Ladies League captain. Plays Tuesdays and Thursdays. Organized the spring invitational. Member since 2005." },
-  { id:4,  name:"James Whitmore",     g:"men",   p:22, hcp:11.3, rounds:74, note:"Former club champion 2016. Afternoon player, brings guests frequently. Member since 1998." },
-  { id:5,  name:"Patricia Langford",  g:"women", p:12, hcp:18.0, rounds:71, note:"Morning player, senior ladies group. Known for her short game finesse. Member since 2003." },
-  { id:6,  name:"Robert Caldwell",    g:"men",   p:33, hcp:6.7,  rounds:69, note:"Match play team captain. Scratch-level ball-striker, competitive stroke play. Member since 2001." },
-  { id:7,  name:"Susan Hemming",      g:"women", p:18, hcp:22.5, rounds:67, note:"Mixed scramble regular. Enthusiastic presence at every member event. Member since 2019." },
-  { id:8,  name:"David Forsythe",     g:"men",   p:44, hcp:3.8,  rounds:65, note:"Club champion 2021 & 2022. Competes in state amateur circuit. Member since 2010." },
-  { id:9,  name:"Carol Burnstead",    g:"women", p:24, hcp:16.2, rounds:63, note:"Ladies League vice captain. Plays every Friday morning. Member since 2007." },
-  { id:10, name:"Michael Wentworth",  g:"men",   p:55, hcp:9.4,  rounds:61, note:"Plays three times per week. Exceptional on the greens. Thursday group member. Member since 2014." },
-  { id:11, name:"Linda Ashworth",     g:"women", p:30, hcp:20.1, rounds:59, note:"Weekend golfer, participates in all charity events. Junior program volunteer. Member since 2016." },
-  { id:12, name:"Thomas Berkley",     g:"men",   p:66, hcp:13.6, rounds:58, note:"Frequent host of client rounds. Prefers afternoon tee times. Member since 2009." },
-  { id:13, name:"Margaret Donovan",   g:"women", p:36, hcp:11.8, rounds:56, note:"Competitive regional tournament player. Represents Interlachen in inter-club matches. Member since 2004." },
-  { id:14, name:"Charles Fairfield",  g:"men",   p:77, hcp:17.4, rounds:54, note:"Retired CFO, plays daily in summer. Founding member of the senior men's group. Member since 1996." },
-  { id:15, name:"Dorothy Hastings",   g:"women", p:42, hcp:24.0, rounds:52, note:"Social golfer; a fixture at the 19th hole. Co-chairs the annual charity auction. Member since 2015." },
-  { id:16, name:"William Prescott",   g:"men",   p:88, hcp:5.1,  rounds:51, note:"Single-digit handicap, club stroke play competitor. Plays both weekend days. Member since 2006." },
-  { id:17, name:"Barbara Whitfield",  g:"women", p:48, hcp:15.3, rounds:50, note:"Ladies League treasurer. Plays Wednesdays and Saturdays. Member since 2002." },
-  { id:18, name:"Richard Cromwell",   g:"men",   p:11, hcp:21.9, rounds:48, note:"Attends every member-guest event. Known for his warm welcome of new members. Member since 2017." },
-  { id:19, name:"Nancy Holbrook",     g:"women", p:54, hcp:19.7, rounds:47, note:"Participates in all ladies' charity scrambles. Active on the social committee. Member since 2013." },
-  { id:20, name:"Joseph Ainsworth",   g:"men",   p:23, hcp:7.2,  rounds:46, note:"Low handicap, loves the back nine challenge. Plays in the club league. Member since 2012." },
-  { id:21, name:"Sandra Cartwright",  g:"women", p:60, hcp:12.4, rounds:45, note:"Regional association tournament player. Strong driver of the ball. Member since 2008." },
-  { id:22, name:"George Blackwood",   g:"men",   p:34, hcp:26.3, rounds:44, note:"High handicap but hugely enthusiastic. Plays in every member event. Member since 2020." },
-  { id:23, name:"Karen Pemberton",    g:"women", p:66, hcp:17.8, rounds:43, note:"Regular Tuesday morning player. Organized the ladies' match play bracket. Member since 2011." },
-  { id:24, name:"Edward Stratford",   g:"men",   p:45, hcp:10.5, rounds:42, note:"Mid-handicap competitor. Plays in the Thursday men's league. Member since 2007." },
-  { id:25, name:"Helen Sinclair",     g:"women", p:72, hcp:23.1, rounds:41, note:"Social golfer, brings guests frequently. Popular at club dining events. Member since 2018." },
-  { id:26, name:"Frank Dunmore",      g:"men",   p:56, hcp:14.8, rounds:40, note:"Weekend player, enjoys course setup challenges. Strong on par 5s. Member since 2009." },
-  { id:27, name:"Janet Thornton",     g:"women", p:78, hcp:16.9, rounds:39, note:"Ladies League events organizer. Coordinated the spring fundraiser tournament. Member since 2006." },
-  { id:28, name:"Scott Harrington",   g:"men",   p:67, hcp:2.4,  rounds:38, note:"Near-scratch golfer, competes nationally in amateur events. Teaching assistant to the head pro. Member since 2015." },
-  { id:29, name:"Diane Ashford",      g:"women", p:84, hcp:21.3, rounds:37, note:"New member improving rapidly. Takes weekly lessons from the assistant pro. Member since 2022." },
-  { id:30, name:"Paul Crompton",      g:"men",   p:78, hcp:18.6, rounds:36, note:"Business member, entertains clients Friday afternoons. Prefers shotgun scramble format. Member since 2016." },
-  { id:31, name:"Ruth Eversley",      g:"women", p:90, hcp:13.2, rounds:35, note:"Competitive ladies player; represents Interlachen in inter-club matches. Member since 2004." },
-  { id:32, name:"Mark Whitfield",     g:"men",   p:89, hcp:8.9,  rounds:34, note:"Thursday men's group regular. Consistent ball-striker with a reliable short game. Member since 2010." },
-  { id:33, name:"Sharon Davenport",   g:"women", p:96, hcp:28.0, rounds:33, note:"Recreational golfer. Very active in the club's social programming. Member since 2021." },
-  { id:34, name:"Steven Blackstone",  g:"men",   p:90, hcp:15.7, rounds:32, note:"Finance professional; weekday afternoon tee times. Strong wind player. Member since 2013." },
-  { id:35, name:"Catherine Morley",   g:"women", p:4,  hcp:10.0, rounds:31, note:"Competitive in women's amateur circuit. Youngest regular competitor in the ladies' club. Member since 2019." },
-  { id:36, name:"Kenneth Fairbanks",  g:"men",   p:91, hcp:22.4, rounds:30, note:"Senior member and club historian. Participates in all senior men's events. Member since 1994." },
-  { id:37, name:"Donna Whitmore",     g:"women", p:7,  hcp:25.5, rounds:29, note:"Plays regularly with husband James. Enjoys the social leagues. Member since 1998." },
-  { id:38, name:"Gary Pemberton",     g:"men",   p:92, hcp:12.1, rounds:28, note:"Solid mid-handicapper. Plays in the men's Saturday draw. Member since 2011." },
-  { id:39, name:"Christine Aldrich",  g:"women", p:13, hcp:18.8, rounds:27, note:"Regular at ladies events. Volunteers with the junior golf program. Member since 2014." },
-  { id:40, name:"Brian Weatherford",  g:"men",   p:93, hcp:9.3,  rounds:26, note:"Former PGA club professional at a Chicago-area club. Excellent ball-striker and club resource. Member since 2017." }
+  { id:1,  name:"Andrew Tufford",       g:"men",   p:10, hcp:4.2,  rounds:89, memberNum:"ICC-1001", memberType:"Full Golf", memberSince:2008, teeTime:"6:30 AM preferred", dining:"Grill Room, no shellfish", spouse:"Karen Tufford", notes:"Low-handicap regular. Competes in club championship annually. Board of Directors member." },
+  { id:2,  name:"Keith Carnish",        g:"men",   p:15, hcp:8.1,  rounds:82, memberNum:"ICC-1002", memberType:"Full Golf", memberSince:2011, teeTime:"Saturday 7:00 AM standing", dining:"Main Dining, wine pairing enthusiast", spouse:"Linda Carnish", notes:"Saturday morning regular. Strong iron player. Wednesday group. Tournament Committee." },
+  { id:3,  name:"Helenbeth Reynolds",   g:"women", p:5,  hcp:14.5, rounds:78, memberNum:"ICC-1003", memberType:"Full Golf", memberSince:2005, teeTime:"Tues/Thurs 8:30 AM", dining:"Terrace dining preferred, vegetarian options", spouse:"", notes:"Ladies League captain. Organized the spring invitational. Board of Directors member." },
+  { id:4,  name:"Tom Mooty",            g:"men",   p:22, hcp:11.3, rounds:74, memberNum:"ICC-1004", memberType:"Full Golf", memberSince:1998, teeTime:"Afternoon preferred", dining:"Grill Room regular, steak medium-rare", spouse:"Janet Mooty", notes:"Former club champion 2016. Brings guests frequently. Tournament Committee chair." },
+  { id:5,  name:"Mike Schultz",         g:"men",   p:12, hcp:6.7,  rounds:71, memberNum:"ICC-1005", memberType:"Full Golf", memberSince:2001, teeTime:"Weekend mornings", dining:"Casual bar area, craft beer", spouse:"Diane Schultz", notes:"Match play team captain. Competitive stroke play. Board of Directors." },
+  { id:6,  name:"Bob Naegele",          g:"men",   p:33, hcp:9.8,  rounds:69, memberNum:"ICC-1006", memberType:"Legacy", memberSince:1985, teeTime:"9:00 AM weekdays", dining:"Private dining room for events", spouse:"Nancy Naegele", notes:"Former Wild owner. Major donor. Senior men's group founder." },
+  { id:7,  name:"Tim Welsh",            g:"men",   p:18, hcp:12.5, rounds:67, memberNum:"ICC-1007", memberType:"Full Golf", memberSince:2003, teeTime:"Flexible weekday", dining:"Grill Room, seafood preference", spouse:"Mary Welsh", notes:"Mixed scramble regular. Enthusiastic at every member event. Tournament Committee." },
+  { id:8,  name:"Peter Erickson",       g:"men",   p:44, hcp:3.8,  rounds:65, memberNum:"ICC-1008", memberType:"Full Golf", memberSince:2010, teeTime:"Early AM, 6:00-6:30", dining:"Light lunch, health-conscious", spouse:"Sarah Erickson", notes:"Club champion 2021 & 2022. State amateur circuit competitor." },
+  { id:9,  name:"Jim Campbell",         g:"men",   p:24, hcp:16.2, rounds:63, memberNum:"ICC-1009", memberType:"Full Golf", memberSince:2007, teeTime:"Friday 8:00 AM standing", dining:"Main Dining, classic menu", spouse:"Patricia Campbell", notes:"Board of Directors vice chair. Manages member-guest invitational." },
+  { id:10, name:"David Lilly",          g:"men",   p:55, hcp:9.4,  rounds:61, memberNum:"ICC-1010", memberType:"Full Golf", memberSince:1992, teeTime:"Three times weekly, mornings", dining:"Terrace, enjoys wine list", spouse:"Eleanor Lilly", notes:"Plays three times per week. Exceptional putter. Thursday group." },
+  { id:11, name:"Mark Rosen",           g:"men",   p:30, hcp:15.1, rounds:59, memberNum:"ICC-1011", memberType:"Full Golf", memberSince:2004, teeTime:"Weekend mornings", dining:"Casual dining, family meals", spouse:"Julie Rosen", notes:"Sports media personality. Active in charity golf events. Board of Directors." },
+  { id:12, name:"Steve Briggs",         g:"men",   p:66, hcp:13.6, rounds:58, memberNum:"ICC-1012", memberType:"Full Golf", memberSince:2009, teeTime:"Afternoon tee times", dining:"Grill Room regular", spouse:"Laura Briggs", notes:"Frequent host of client rounds. Tournament Committee member." },
+  { id:13, name:"Richard Davis",        g:"men",   p:36, hcp:11.8, rounds:56, memberNum:"ICC-1013", memberType:"Full Golf", memberSince:1996, teeTime:"Weekday mornings", dining:"Private dining for business", spouse:"Peggy Davis", notes:"Former US Bancorp CEO. Board of Directors. Major club benefactor." },
+  { id:14, name:"John Cowles",          g:"men",   p:77, hcp:17.4, rounds:54, memberNum:"ICC-1014", memberType:"Legacy", memberSince:1988, teeTime:"Late morning preferred", dining:"Main Dining, traditional", spouse:"Sage Cowles", notes:"Star Tribune family. Senior men's group. Club historian contributor." },
+  { id:15, name:"Pat Fallon",           g:"men",   p:42, hcp:10.0, rounds:52, memberNum:"ICC-1015", memberType:"Full Golf", memberSince:2000, teeTime:"Saturday 8:00 AM", dining:"Creative cocktails, terrace", spouse:"Anne Fallon", notes:"Advertising legend. Co-chairs annual charity auction. Board of Directors." },
+  { id:16, name:"Greg Page",            g:"men",   p:88, hcp:5.1,  rounds:51, memberNum:"ICC-1016", memberType:"Full Golf", memberSince:2006, teeTime:"Early AM weekdays", dining:"Grill Room, hearty meals", spouse:"Victoria Page", notes:"Former Cargill CEO. Single-digit handicap. Club stroke play competitor." },
+  { id:17, name:"Tom Petters",          g:"men",   p:48, hcp:15.3, rounds:50, memberNum:"ICC-1017", memberType:"Social", memberSince:2002, teeTime:"Weekday afternoons", dining:"Main Dining regular", spouse:"", notes:"Former business executive. Social member. Plays Wednesdays and Saturdays." },
+  { id:18, name:"Marilyn Nelson",       g:"women", p:11, hcp:21.9, rounds:48, memberNum:"ICC-1018", memberType:"Full Golf", memberSince:1995, teeTime:"Tues/Thurs mornings", dining:"Terrace preferred, light fare", spouse:"Glen Nelson", notes:"Former Carlson Companies CEO. Ladies League supporter. Board of Directors." },
+  { id:19, name:"Wheel Whitney",        g:"men",   p:54, hcp:7.7,  rounds:47, memberNum:"ICC-1019", memberType:"Full Golf", memberSince:1990, teeTime:"Flexible, mostly mornings", dining:"Grill Room, classic cocktails", spouse:"Kathleen Whitney", notes:"Prominent investor. Low handicap. Active in inter-club matches." },
+  { id:20, name:"Jim Pohlad",           g:"men",   p:23, hcp:7.2,  rounds:46, memberNum:"ICC-1020", memberType:"Legacy", memberSince:1988, teeTime:"Weekend preferred", dining:"Private dining", spouse:"Rebecca Pohlad", notes:"Twins ownership family. Low handicap. Club league player." },
+  { id:21, name:"Carl Pohlad",          g:"men",   p:60, hcp:18.4, rounds:45, memberNum:"ICC-1021", memberType:"Legacy", memberSince:1975, teeTime:"Weekday mornings", dining:"Main Dining, traditional", spouse:"Eloise Pohlad", notes:"Banking patriarch and former Twins owner. Senior men's group. Legacy member." },
+  { id:22, name:"Bob Ulrich",           g:"men",   p:34, hcp:12.3, rounds:44, memberNum:"ICC-1022", memberType:"Full Golf", memberSince:1998, teeTime:"Saturday 7:30 AM", dining:"Grill Room, wine enthusiast", spouse:"Jill Ulrich", notes:"Former Target CEO. Mid-handicap. Plays in every member event." },
+  { id:23, name:"Glen Taylor",          g:"men",   p:66, hcp:14.8, rounds:43, memberNum:"ICC-1023", memberType:"Full Golf", memberSince:2001, teeTime:"Flexible schedule", dining:"Casual dining preferred", spouse:"Becky Taylor", notes:"Timberwolves/Lynx owner. Regular Tuesday player. Charity event sponsor." },
+  { id:24, name:"Harvey Mackay",        g:"men",   p:45, hcp:10.5, rounds:42, memberNum:"ICC-1024", memberType:"Full Golf", memberSince:1980, teeTime:"Early AM, 6:30", dining:"Light breakfast, health focus", spouse:"Carol Ann Mackay", notes:"Best-selling author. Networking legend. Thursday men's league." },
+  { id:25, name:"Irwin Jacobs",         g:"men",   p:72, hcp:16.1, rounds:41, memberNum:"ICC-1025", memberType:"Full Golf", memberSince:1982, teeTime:"Weekday mornings", dining:"Grill Room regular", spouse:"Alexandra Jacobs", notes:"Corporate raider turned philanthropist. Senior men's group." },
+  { id:26, name:"Curt Carlson",         g:"men",   p:56, hcp:14.8, rounds:40, memberNum:"ICC-1026", memberType:"Legacy", memberSince:1970, teeTime:"Morning preferred", dining:"Private dining, formal events", spouse:"Arleen Carlson", notes:"Carlson Companies founder. Legacy member. Major club benefactor." },
+  { id:27, name:"Win Wallin",           g:"men",   p:78, hcp:16.9, rounds:39, memberNum:"ICC-1027", memberType:"Full Golf", memberSince:1985, teeTime:"Weekday mornings", dining:"Main Dining preferred", spouse:"Maxine Wallin", notes:"Former Medtronic CEO. Ladies League events supporter. Mentors new members." },
+  { id:28, name:"Dale Olseth",          g:"men",   p:67, hcp:11.4, rounds:38, memberNum:"ICC-1028", memberType:"Full Golf", memberSince:1990, teeTime:"Tue/Thu 9:00 AM", dining:"Terrace dining, light lunch", spouse:"Joan Olseth", notes:"Bio-Vascular founder. Active competitor. Tournament Committee." },
+  { id:29, name:"Kenny Cutler",         g:"men",   p:84, hcp:21.3, rounds:37, memberNum:"ICC-1029", memberType:"Full Golf", memberSince:1995, teeTime:"Afternoon preferred", dining:"Casual bar, sports viewing", spouse:"Marie Cutler", notes:"Prominent attorney. New member mentor. Takes weekly lessons." },
+  { id:30, name:"Bruce Dayton",         g:"men",   p:78, hcp:18.6, rounds:36, memberNum:"ICC-1030", memberType:"Legacy", memberSince:1965, teeTime:"Late morning", dining:"Main Dining, formal", spouse:"Ruth Dayton", notes:"Dayton-Hudson family. Philanthropist. Senior men's honorary captain." },
+  { id:31, name:"Curtis Johnson",       g:"men",   p:90, hcp:13.2, rounds:35, memberNum:"ICC-1031", memberType:"Full Golf", memberSince:2004, teeTime:"Flexible schedule", dining:"Grill Room preferred", spouse:"Helen Johnson", notes:"SC Johnson family. Inter-club match representative." },
+  { id:32, name:"Roger Headrick",       g:"men",   p:89, hcp:8.9,  rounds:34, memberNum:"ICC-1032", memberType:"Full Golf", memberSince:2000, teeTime:"Weekend mornings", dining:"Casual dining", spouse:"Barbara Headrick", notes:"Former Vikings president. Consistent ball-striker, reliable short game." },
+  { id:33, name:"David Koch",           g:"men",   p:96, hcp:15.7, rounds:33, memberNum:"ICC-1033", memberType:"Full Golf", memberSince:2005, teeTime:"Weekday afternoons", dining:"Private dining for guests", spouse:"Julia Koch", notes:"Business leader. Weekday afternoon regular. Strong wind player." },
+  { id:34, name:"Tony Bouza",           g:"men",   p:90, hcp:22.0, rounds:32, memberNum:"ICC-1034", memberType:"Social", memberSince:2008, teeTime:"Flexible", dining:"Grill Room, casual", spouse:"Erica Bouza", notes:"Former Minneapolis police chief. Social member. Enjoys the course walks." },
+  { id:35, name:"Chip Glaser",          g:"men",   p:4,  hcp:6.0,  rounds:31, memberNum:"ICC-1035", memberType:"Full Golf", memberSince:2019, teeTime:"Early AM preferred", dining:"Terrace, health-conscious", spouse:"Lynn Glaser", notes:"New Members Q1 2026. Youngest regular competitor. Women's amateur circuit." },
+  { id:36, name:"Van Peterson",         g:"men",   p:91, hcp:19.4, rounds:30, memberNum:"ICC-1036", memberType:"Full Golf", memberSince:2015, teeTime:"Sat/Sun mornings", dining:"Family dining, kids menu", spouse:"Michelle Peterson", notes:"New Members Q1 2026. Senior men's events participant. Club historian." },
+  { id:37, name:"Tim Pawlenty",         g:"men",   p:7,  hcp:16.5, rounds:29, memberNum:"ICC-1037", memberType:"Full Golf", memberSince:2012, teeTime:"Weekday afternoons", dining:"Casual grill", spouse:"Mary Pawlenty", notes:"Former MN Governor. Social leagues regular. New Members Q1 2026 sponsor." },
+  { id:38, name:"Jim Oberstar",         g:"men",   p:92, hcp:20.1, rounds:28, memberNum:"ICC-1038", memberType:"Social", memberSince:2010, teeTime:"Flexible weekdays", dining:"Main Dining preferred", spouse:"Jean Oberstar", notes:"Former U.S. Congressman. Men's Saturday draw. Community liaison." },
+  { id:39, name:"Norm Coleman",         g:"men",   p:13, hcp:18.8, rounds:27, memberNum:"ICC-1039", memberType:"Full Golf", memberSince:2014, teeTime:"Weekday mornings", dining:"Grill Room casual", spouse:"Laurie Coleman", notes:"Former U.S. Senator. Junior golf program volunteer. New Members Q1 2026 mentor." },
+  { id:40, name:"Amy Klobuchar",        g:"women", p:93, hcp:24.3, rounds:26, memberNum:"ICC-1040", memberType:"Full Golf", memberSince:2020, teeTime:"Weekend afternoons", dining:"Terrace, light options", spouse:"John Bessler", notes:"U.S. Senator. New Members Q1 2026. Charity event champion." }
 ];
 
 // ────────────────────────────────────────────────────
@@ -974,15 +1073,10 @@ function renderQuiz() {
   var list = document.createElement('div');
   list.className = 'options-list';
 
-  var continueBtn = document.createElement('button');
-  continueBtn.className = 'continue-btn';
-  continueBtn.textContent = 'Tap to continue \u2192';
-  continueBtn.style.display = 'none';
-  continueBtn.addEventListener('click', function() {
-    Q.idx++;
-    Q.answered = false;
-    renderQuiz();
-  });
+  var tapMsg = document.createElement('div');
+  tapMsg.className = 'tap-anywhere-msg';
+  tapMsg.textContent = 'TAP ANYWHERE TO CONTINUE';
+  tapMsg.style.display = 'none';
 
   options.forEach(function(opt, i) {
     var btn = document.createElement('button');
@@ -1003,13 +1097,21 @@ function renderQuiz() {
         });
         showToast('Incorrect');
       }
-      continueBtn.style.display = 'block';
+      tapMsg.style.display = 'block';
+      setTimeout(function() {
+        sec.addEventListener('click', function handler() {
+          sec.removeEventListener('click', handler);
+          Q.idx++;
+          Q.answered = false;
+          renderQuiz();
+        }, {once: true});
+      }, 300);
     });
     list.appendChild(btn);
   });
 
   sec.appendChild(list);
-  sec.appendChild(continueBtn);
+  sec.appendChild(tapMsg);
 }
 
 // ────────────────────────────────────────────────────
@@ -1075,20 +1177,25 @@ function renderRecall() {
     block.className = 'recall-name-block';
     block.innerHTML =
       '<div class="recall-name">' + m.name + '</div>' +
-      '<div class="recall-detail">Hdcp ' + m.hcp + ' \xb7 ' + m.rounds + ' rounds</div>' +
-      '<div class="recall-notes">' + m.note + '</div>';
+      '<div class="recall-detail">' + (m.memberNum || '') + ' \xb7 ' + (m.memberType || 'Full Golf') + ' \xb7 Since ' + (m.memberSince || '') + '</div>' +
+      '<div class="recall-detail">Hdcp ' + m.hcp + ' \xb7 ' + m.rounds + ' rounds' + (m.teeTime ? ' \xb7 ' + m.teeTime : '') + '</div>' +
+      (m.spouse ? '<div class="recall-detail">Spouse: ' + m.spouse + '</div>' : '') +
+      (m.dining ? '<div class="recall-detail" style="font-style:italic">' + m.dining + '</div>' : '') +
+      '<div class="recall-notes">' + (m.notes || '') + '</div>';
     sec.appendChild(block);
 
-    var contBtn = document.createElement('button');
-    contBtn.className = 'continue-btn';
-    contBtn.style.marginTop = '1.25rem';
-    contBtn.textContent = 'Next Member \u2192';
-    contBtn.addEventListener('click', function() {
-      R.idx++;
-      R.revealed = false;
-      renderRecall();
-    });
-    sec.appendChild(contBtn);
+    var tapMsg = document.createElement('div');
+    tapMsg.className = 'tap-anywhere-msg';
+    tapMsg.textContent = 'TAP ANYWHERE TO CONTINUE';
+    sec.appendChild(tapMsg);
+    setTimeout(function() {
+      sec.addEventListener('click', function handler() {
+        sec.removeEventListener('click', handler);
+        R.idx++;
+        R.revealed = false;
+        renderRecall();
+      }, {once: true});
+    }, 300);
   }
 }
 
@@ -1100,13 +1207,102 @@ function saveLists() { localStorage.setItem('icc_lists', JSON.stringify(lists));
 
 var studyCtx = null;
 
+// ── ASSIGNED LISTS (pre-built with deadlines) ─────
+var ASSIGNED_LISTS = [
+  {
+    name: 'Board of Directors',
+    deadline: 'Apr 1, 2026',
+    memberIds: [1, 3, 5, 9, 11, 13, 15, 18],
+    progress: 62
+  },
+  {
+    name: 'Tournament Committee',
+    deadline: 'Apr 10, 2026',
+    memberIds: [2, 4, 7, 12, 28],
+    progress: 40
+  },
+  {
+    name: 'New Members Q1 2026',
+    deadline: 'Apr 15, 2026',
+    memberIds: [35, 36, 37, 39, 40],
+    progress: 20
+  }
+];
+
+function daysUntil(dateStr) {
+  var d = new Date(dateStr);
+  var now = new Date();
+  return Math.ceil((d - now) / (1000 * 60 * 60 * 24));
+}
+
+function renderAssignedCard(aList) {
+  var days = daysUntil(aList.deadline);
+  var urgent = days <= 5;
+  var card = document.createElement('div');
+  card.className = 'assigned-list-card';
+  card.innerHTML =
+    '<div class="assigned-list-header">' +
+      '<div class="assigned-list-name">' + aList.name + '</div>' +
+      '<div class="deadline-badge' + (urgent ? ' urgent' : '') + '">Due ' + aList.deadline + '</div>' +
+    '</div>' +
+    '<div class="assigned-list-meta">' + aList.memberIds.length + ' members \xb7 ' + aList.progress + '% learned</div>' +
+    '<div class="assigned-progress-bar"><div class="assigned-progress-fill" style="width:' + aList.progress + '%"></div></div>' +
+    '<div class="assigned-list-actions"></div>';
+
+  var actions = card.querySelector('.assigned-list-actions');
+  var testBtn = document.createElement('button');
+  testBtn.className = 'test-btn';
+  testBtn.textContent = 'TEST';
+  testBtn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    var pool = aList.memberIds.map(function(id) {
+      return MEMBERS.filter(function(m) { return m.id === id; })[0];
+    }).filter(Boolean);
+    startQuiz(pool);
+    // Switch to quiz tab visually
+    document.querySelectorAll('.mode-tab').forEach(function(t) {
+      t.classList.toggle('active', t.dataset.mode === 'quiz');
+    });
+    document.querySelectorAll('.mode-section').forEach(function(s) {
+      s.classList.toggle('active', s.id === 'quiz-section');
+    });
+  });
+  var viewBtn = document.createElement('button');
+  viewBtn.className = 'view-btn';
+  viewBtn.textContent = 'View';
+  viewBtn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    var names = aList.memberIds.map(function(id) {
+      var m = MEMBERS.filter(function(x) { return x.id === id; })[0];
+      return m ? m.name : '';
+    }).filter(Boolean).join(', ');
+    showToast(aList.name + ': ' + names);
+  });
+  actions.appendChild(testBtn);
+  actions.appendChild(viewBtn);
+  return card;
+}
+
 function renderLists() {
   var sec = document.getElementById('lists-section');
   sec.innerHTML = '';
   sec.style.alignItems = 'stretch';
 
+  // ── Assigned Lists Section ──
+  var assignedTitle = document.createElement('div');
+  assignedTitle.className = 'lists-title-txt';
+  assignedTitle.style.marginBottom = '0.6rem';
+  assignedTitle.textContent = 'Assigned Lists';
+  sec.appendChild(assignedTitle);
+
+  ASSIGNED_LISTS.forEach(function(aList) {
+    sec.appendChild(renderAssignedCard(aList));
+  });
+
+  // ── Custom Lists Section ──
   var toolbar = document.createElement('div');
   toolbar.className = 'lists-toolbar';
+  toolbar.style.marginTop = '1.5rem';
   var titleEl = document.createElement('div');
   titleEl.className = 'lists-title-txt';
   titleEl.textContent = 'My Lists';
@@ -1123,7 +1319,7 @@ function renderLists() {
     empty.className = 'empty-state';
     empty.innerHTML =
       '<svg viewBox="0 0 24 24" fill="none" stroke="var(--gray-400)" stroke-width="1.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>' +
-      '<p>No lists yet.</p>' +
+      '<p>No custom lists yet.</p>' +
       '<p style="font-size:0.8rem;margin-top:0.4rem;">Create a list to study specific members with spaced repetition.</p>';
     sec.appendChild(empty);
     return;
@@ -1301,15 +1497,10 @@ function renderListStudy() {
   var optList = document.createElement('div');
   optList.className = 'options-list';
 
-  var contBtn = document.createElement('button');
-  contBtn.className = 'continue-btn';
-  contBtn.textContent = 'Tap to continue \u2192';
-  contBtn.style.display = 'none';
-  contBtn.addEventListener('click', function() {
-    studyCtx.idx++;
-    studyCtx.answered = false;
-    renderListStudy();
-  });
+  var tapMsg = document.createElement('div');
+  tapMsg.className = 'tap-anywhere-msg';
+  tapMsg.textContent = 'TAP ANYWHERE TO CONTINUE';
+  tapMsg.style.display = 'none';
 
   options.forEach(function(opt, i) {
     var btn = document.createElement('button');
@@ -1336,13 +1527,21 @@ function renderListStudy() {
         saveLists();
         showToast('Incorrect \u2014 back to Box 1');
       }
-      contBtn.style.display = 'block';
+      tapMsg.style.display = 'block';
+      setTimeout(function() {
+        sec.addEventListener('click', function handler() {
+          sec.removeEventListener('click', handler);
+          studyCtx.idx++;
+          studyCtx.answered = false;
+          renderListStudy();
+        }, {once: true});
+      }, 300);
     });
     optList.appendChild(btn);
   });
 
   sec.appendChild(optList);
-  sec.appendChild(contBtn);
+  sec.appendChild(tapMsg);
 }
 
 // ────────────────────────────────────────────────────

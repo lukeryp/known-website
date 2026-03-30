@@ -162,7 +162,7 @@ input{font-family:inherit}
 <!-- Top Bar -->
 <div class="top-bar">
   <div>
-    <div class="top-bar-title">WILLOW CREEK</div>
+    <div class="top-bar-title">WOODMONT CC</div>
     <div class="top-bar-sub">KNOWN Demo</div>
   </div>
   <div class="top-bar-right">
@@ -494,12 +494,6 @@ function answerMC(idx, event){
   if(isCorrect){
     btns[idx].classList.add("correct");
     recordAnswer(correct, true);
-    // Show "Tap to continue" button instead of auto-advancing
-    var tapBtn = document.createElement("button");
-    tapBtn.className = "btn-tap-continue";
-    tapBtn.innerHTML = "Tap to continue &rarr;";
-    tapBtn.onclick = function(e){ e.stopPropagation(); nextQuiz(); };
-    document.getElementById("quizArea").appendChild(tapBtn);
   } else {
     btns[idx].classList.add("wrong");
     // Reveal correct answer in green
@@ -507,17 +501,24 @@ function answerMC(idx, event){
       if(c.id === correct.id) btns[i].classList.add("reveal");
     });
     recordAnswer(correct, false);
-    // Show correct member photo and name, then "Tap to continue" button
+    // Show correct member photo and name
     var revealDiv = document.createElement("div");
     revealDiv.className = "wrong-reveal";
     revealDiv.innerHTML = '<div class="wrong-reveal-photo"><img src="' + correct.photo + '" alt="' + correct.full + '"></div><div class="wrong-reveal-name">' + correct.full + '</div>';
-    var tapBtn = document.createElement("button");
-    tapBtn.className = "btn-tap-continue";
-    tapBtn.innerHTML = "Tap to continue &rarr;";
-    tapBtn.onclick = function(e){ e.stopPropagation(); nextQuiz(); };
-    revealDiv.appendChild(tapBtn);
     document.getElementById("quizArea").appendChild(revealDiv);
   }
+  // TAP ANYWHERE to continue (300ms delay to prevent accidental advance)
+  var tapMsg = document.createElement("div");
+  tapMsg.style.cssText = "text-align:center;margin-top:18px;font-size:13px;color:var(--gold);letter-spacing:1px;opacity:0;transition:opacity 0.3s;";
+  tapMsg.textContent = "TAP ANYWHERE TO CONTINUE";
+  document.getElementById("quizArea").appendChild(tapMsg);
+  setTimeout(function(){
+    tapMsg.style.opacity = "1";
+    document.getElementById("quizArea").addEventListener("click", function handler(){
+      document.getElementById("quizArea").removeEventListener("click", handler);
+      nextQuiz();
+    }, {once: true});
+  }, 300);
 }
 
 function answerRecall(){
@@ -533,7 +534,19 @@ function answerRecall(){
     inp.classList.add("correct");
     document.getElementById("recallFeedback").innerHTML = '<span style="color:var(--correct)">&#10003; ' + m.full + '</span>';
     recordAnswer(m, true);
-    setTimeout(nextQuiz, 1000);
+    // Tap anywhere to continue (300ms delay)
+    var tapMsg = document.createElement("div");
+    tapMsg.style.cssText = "text-align:center;margin-top:12px;font-size:13px;color:var(--gold);letter-spacing:1px;opacity:0;transition:opacity 0.3s;";
+    tapMsg.textContent = "TAP ANYWHERE TO CONTINUE";
+    document.getElementById("quizArea").appendChild(tapMsg);
+    setTimeout(function(){
+      tapMsg.style.opacity = "1";
+      document.getElementById("quizArea").addEventListener("click", function handler(e){
+        if(e.target.closest(".recall-actions")) return;
+        document.getElementById("quizArea").removeEventListener("click", handler);
+        nextQuiz();
+      }, {once: true});
+    }, 300);
   } else {
     inp.classList.add("wrong");
     document.getElementById("recallFeedback").innerHTML = '<span style="color:var(--wrong)">&#10007; It was <strong>' + m.full + '</strong></span>';
@@ -553,7 +566,19 @@ function skipRecall(){
   document.getElementById("recallInput").classList.add("wrong");
   document.getElementById("recallFeedback").innerHTML = '<span style="color:var(--wrong)">It was <strong>' + m.full + '</strong></span>';
   recordAnswer(m, false);
-  setTimeout(nextQuiz, 1500);
+  // Tap anywhere to continue (300ms delay)
+  var tapMsg = document.createElement("div");
+  tapMsg.style.cssText = "text-align:center;margin-top:12px;font-size:13px;color:var(--gold);letter-spacing:1px;opacity:0;transition:opacity 0.3s;";
+  tapMsg.textContent = "TAP ANYWHERE TO CONTINUE";
+  document.getElementById("quizArea").appendChild(tapMsg);
+  setTimeout(function(){
+    tapMsg.style.opacity = "1";
+    document.getElementById("quizArea").addEventListener("click", function handler(e){
+      if(e.target.closest(".recall-actions")) return;
+      document.getElementById("quizArea").removeEventListener("click", handler);
+      nextQuiz();
+    }, {once: true});
+  }, 300);
 }
 
 function giveHint(){
