@@ -440,6 +440,8 @@
     }
   }
 
+  function photoErr(img) { img.parentNode.innerHTML = CAM_SVG; }
+
   function renderQuiz(g, idx) {
     // Pick 3 wrong answers from same tier (or all if not enough)
     const sameTier = GOLFERS.map((x, i) => i).filter(i => i !== idx && GOLFERS[i].tier === g.tier);
@@ -447,7 +449,7 @@
     const options = [idx, ...shuffled].sort(() => Math.random() - 0.5);
 
     quizCard.innerHTML = `
-      <div class="member-photo">${CAM_SVG}</div>
+      <div class="member-photo"><img src="https://web.foretees.com/v5/member-photos/interlachen/FT${g.ft}.jpg" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="photoErr(this)" /></div>
       <div class="choices">
         ${options.map(i => `<div class="choice-btn" data-idx="${i}">${displayName(GOLFERS[i])}</div>`).join('')}
       </div>
@@ -481,7 +483,7 @@
 
   function renderRecall(g, idx) {
     quizCard.innerHTML = `
-      <div class="member-photo">${CAM_SVG}</div>
+      <div class="member-photo"><img src="https://web.foretees.com/v5/member-photos/interlachen/FT${g.ft}.jpg" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="photoErr(this)" /></div>
       <button class="recall-reveal" id="reveal-btn">Tap to Reveal</button>
       <div class="member-details hidden" id="q-details"></div>
       <div class="tap-hint" id="tap-hint">Tap anywhere for next</div>
