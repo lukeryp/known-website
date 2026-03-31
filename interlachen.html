@@ -501,17 +501,66 @@
 
   window._camFallback   = function(el) { el.parentNode.innerHTML = CAM_SVG; };
   window._camFallbackSm = function(el) { el.parentNode.innerHTML = CAM_SM; };
-  window._camFallbackFT = function(el) { el.parentNode.innerHTML = CAM_SVG; };
-  window._camFallbackFTSm = function(el) { el.parentNode.innerHTML = CAM_SM; };
+  window._camFallbackFT = function(el) {
+    var ft = (el.src.match(/FT([^.]+)\.jpg/) || [])[1];
+    el.parentNode.innerHTML = CAM_SVG;
+    if (ft) {
+      el.parentNode.dataset.ft = ft;
+      el.parentNode.style.cursor = 'pointer';
+      el.parentNode.title = 'Tap to add photo';
+      el.parentNode.onclick = function() { capturePhoto(ft); };
+    }
+  };
+  window._camFallbackFTSm = function(el) {
+    var ft = (el.src.match(/FT([^.]+)\.jpg/) || [])[1];
+    el.parentNode.innerHTML = CAM_SM;
+    if (ft) {
+      el.parentNode.dataset.ft = ft;
+      el.parentNode.style.cursor = 'pointer';
+      el.parentNode.title = 'Tap to add photo';
+      el.parentNode.onclick = function() { capturePhoto(ft); };
+    }
+  };
   function ftPhotoUrl(g) {
     return 'https://web.foretees.com/v5/member-photos/interlachen/FT' + g.ft + '.jpg';
   }
+  function capturePhoto(ft) {
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.capture = 'environment';
+    input.style.display = 'none';
+    document.body.appendChild(input);
+    input.onchange = function(e) {
+      var file = e.target.files[0];
+      if (!file) { document.body.removeChild(input); return; }
+      var reader = new FileReader();
+      reader.onload = function(ev) {
+        var dataUrl = ev.target.result;
+        localStorage.setItem('photo_ft_' + ft, dataUrl);
+        document.querySelectorAll('[data-ft="' + ft + '"]').forEach(function(container) {
+          container.innerHTML = '<img src="' + dataUrl + '" alt="">';
+          container.style.cursor = '';
+          container.title = '';
+          container.onclick = null;
+          delete container.dataset.ft;
+        });
+        if (document.body.contains(input)) document.body.removeChild(input);
+      };
+      reader.readAsDataURL(file);
+    };
+    input.click();
+  }
   function ftImg(g) {
     if (!g || !g.memberNumber) return CAM_SVG;
+    var local = g.ft && localStorage.getItem('photo_ft_' + g.ft);
+    if (local) return '<img src="' + local + '" alt="">';
     return '<img src="' + ftPhotoUrl(g) + '" onerror="window._camFallbackFT(this)" alt="">';
   }
   function ftImgSm(g) {
     if (!g || !g.memberNumber) return CAM_SM;
+    var local = g.ft && localStorage.getItem('photo_ft_' + g.ft);
+    if (local) return '<img src="' + local + '" alt="">';
     return '<img src="' + ftPhotoUrl(g) + '" onerror="window._camFallbackFTSm(this)" alt="">';
   }
   function smsLink(phone) {
