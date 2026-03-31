@@ -351,9 +351,54 @@
   0%, 100% { opacity: 1; transform: scale(1); }
   50% { opacity: 0.5; transform: scale(0.88); }
 }
+
+/* ===== SESSION QUEUE ===== */
+.join-screen { position:fixed; inset:0; background:var(--green-900); display:flex; flex-direction:column; align-items:center; justify-content:center; padding:32px; z-index:2000; }
+.join-screen.hidden { display:none; }
+.join-screen h1 { font-family:Raleway,sans-serif; font-size:2.4em; font-weight:800; color:var(--gold); letter-spacing:2px; margin-bottom:4px; }
+.join-screen > p { color:var(--gray-400); margin-bottom:28px; font-size:.95em; }
+.join-session-box { background:var(--green-800); border:1px solid var(--gold-dim); border-radius:16px; padding:24px 28px; width:100%; max-width:340px; text-align:center; }
+.join-session-code { font-size:2.2em; font-weight:800; font-family:Raleway,sans-serif; color:var(--gold); letter-spacing:5px; margin-bottom:2px; }
+.join-session-sublabel { font-size:.78em; color:var(--gray-400); text-transform:uppercase; letter-spacing:1px; margin-bottom:20px; }
+.join-name-input { width:100%; padding:12px 16px; background:rgba(255,255,255,0.06); border:1px solid var(--gold-dim); border-radius:10px; color:#fff; font-size:1em; text-align:center; margin-bottom:12px; box-sizing:border-box; }
+.join-name-input::placeholder { color:rgba(255,255,255,0.3); }
+.join-btn { width:100%; padding:14px; background:var(--gold); color:var(--green-900); border:none; border-radius:10px; font-size:1em; font-weight:700; font-family:Raleway,sans-serif; cursor:pointer; }
+.join-btn:active { transform:scale(.97); }
+.session-tab-content { padding:16px; }
+.session-create-box { background:var(--green-800); border:1px solid var(--gold-dim); border-radius:14px; padding:18px; margin-bottom:20px; }
+.session-create-box h3 { font-family:Raleway,sans-serif; font-size:1.05em; color:var(--gold); margin:0 0 14px; }
+.session-name-input { width:100%; padding:10px 14px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); border-radius:8px; color:#fff; font-size:.95em; margin-bottom:10px; box-sizing:border-box; }
+.session-name-input::placeholder { color:rgba(255,255,255,0.3); }
+.session-create-btn { padding:10px 24px; background:var(--gold); color:var(--green-900); border:none; border-radius:8px; font-weight:700; font-family:Raleway,sans-serif; cursor:pointer; font-size:.95em; }
+.session-item { background:var(--green-800); border:1px solid var(--gold-dim); border-radius:14px; padding:16px; margin-bottom:12px; }
+.session-item-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; }
+.session-item-name { font-weight:700; font-family:Raleway,sans-serif; font-size:1.05em; }
+.session-code-badge { font-size:1.3em; font-weight:800; font-family:Raleway,sans-serif; color:var(--gold); letter-spacing:3px; }
+.session-url-row { display:flex; align-items:center; gap:8px; background:rgba(0,0,0,0.25); border-radius:8px; padding:8px 12px; margin-bottom:12px; font-size:.8em; color:var(--gray-400); }
+.session-url-text { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.session-copy-btn { background:rgba(200,169,81,0.15); border:1px solid var(--gold-dim); color:var(--gold); padding:4px 10px; border-radius:6px; font-size:.8em; cursor:pointer; white-space:nowrap; }
+.session-participants-section h4 { font-size:.8em; color:var(--gray-400); text-transform:uppercase; letter-spacing:.5px; margin:0 0 8px; }
+.session-participant-row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.06); font-size:.9em; }
+.session-participant-row:last-child { border-bottom:none; }
+.participant-name { font-weight:600; }
+.participant-stats { color:var(--gray-400); font-size:.82em; }
+.session-empty { text-align:center; padding:32px 20px; color:var(--gray-400); font-size:.9em; }
+.session-delete-btn { background:none; border:1px solid rgba(255,107,107,0.3); color:#ff6b6b; padding:4px 10px; border-radius:6px; font-size:.8em; cursor:pointer; }
 </style>
 </head>
 <body>
+  <!-- JOIN SESSION SCREEN -->
+  <div id="join-screen" class="join-screen hidden">
+    <h1>KNOWN</h1>
+    <p>Interlachen Country Club</p>
+    <div class="join-session-box">
+      <div class="join-session-code" id="join-session-code">-----</div>
+      <div class="join-session-sublabel">Training Session</div>
+      <input type="text" class="join-name-input" id="join-name-input" placeholder="Your name" maxlength="30" autocomplete="off" autocapitalize="words">
+      <button class="join-btn" id="join-btn">Join Session</button>
+    </div>
+  </div>
+
   <!-- PASSWORD GATE -->
   <div id="gate">
     <h1>KNOWN</h1>
@@ -381,6 +426,7 @@
       <button data-tab="lists">Lists</button>
       <button data-tab="staff">Staff</button>
       <button data-tab="database">Database</button>
+      <button data-tab="session">Session</button>
     </div>
     <div class="tab-content">
       <!-- LEARN TAB -->
@@ -447,6 +493,17 @@
           </div>
         </div>
         <div class="db-list" id="db-list"></div>
+      </div>
+      <!-- SESSION TAB -->
+      <div class="tab-pane" id="tab-session">
+        <div class="session-tab-content">
+          <div class="session-create-box">
+            <h3>Create Training Session</h3>
+            <input type="text" class="session-name-input" id="session-name-input" placeholder="Session name (e.g. Morning Shift)" maxlength="40">
+            <button class="session-create-btn" id="session-create-btn">Generate Session</button>
+          </div>
+          <div id="sessions-list"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -627,6 +684,7 @@
     btn.classList.add('active');
     document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
     if (btn.dataset.tab === 'database') renderDB();
+    if (btn.dataset.tab === 'session') renderSessions();
   }));
 
   // ===== LEARN TAB =====
@@ -2269,6 +2327,148 @@ function showProductionFallback(idx) {
         nextQuestion();
       }
     }
+
+    // ===== SESSION QUEUE (Manager/Trainer Feature) =====
+    (function() {
+      const SESSIONS_KEY = 'icc_sessions';
+      function getSessions() { return JSON.parse(localStorage.getItem(SESSIONS_KEY) || '[]'); }
+      function saveSessions(s) { localStorage.setItem(SESSIONS_KEY, JSON.stringify(s)); }
+
+      function genCode() {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        let c = '';
+        for (let i = 0; i < 5; i++) c += chars[Math.floor(Math.random() * chars.length)];
+        return c;
+      }
+
+      function getParticipants(code) {
+        return JSON.parse(localStorage.getItem('icc_session_' + code + '_participants') || '[]');
+      }
+
+      function saveParticipant(code, name) {
+        const parts = getParticipants(code);
+        if (!parts.find(p => p.name === name)) {
+          parts.push({ name, joinedAt: Date.now() });
+          localStorage.setItem('icc_session_' + code + '_participants', JSON.stringify(parts));
+        }
+      }
+
+      function getSessionUrl(code) {
+        return location.origin + location.pathname + '?session=' + code;
+      }
+
+      // ---- Join screen (URL param flow) ----
+      const urlParams = new URLSearchParams(location.search);
+      const sessionParam = (urlParams.get('session') || '').toUpperCase().trim();
+
+      if (sessionParam) {
+        const cur = getCurrentProfile();
+        // If already joined this session, just ensure app is visible
+        if (cur.startsWith('s_' + sessionParam + '_')) {
+          document.getElementById('gate').classList.add('hidden');
+          document.getElementById('app').classList.add('active');
+        } else {
+          // Show join screen, hide gate and app
+          document.getElementById('app').classList.remove('active');
+          document.getElementById('gate').classList.add('hidden');
+          const joinScreen = document.getElementById('join-screen');
+          joinScreen.classList.remove('hidden');
+          document.getElementById('join-session-code').textContent = sessionParam;
+
+          function doJoin() {
+            const nameRaw = document.getElementById('join-name-input').value.trim();
+            if (!nameRaw) { document.getElementById('join-name-input').focus(); return; }
+            const profileKey = 's_' + sessionParam + '_' + nameRaw.replace(/\s+/g, '_');
+            saveParticipant(sessionParam, nameRaw);
+            const profiles = getProfiles();
+            if (!profiles.includes(profileKey)) { profiles.push(profileKey); saveProfiles(profiles); }
+            setCurrentProfile(profileKey);
+            mcAccuracy = JSON.parse(localStorage.getItem(pKey('icc_mc_accuracy')) || '{}');
+            populateProfileSelect();
+            updateScoresDisplay();
+            updateStreakDisplay();
+            startSession();
+            joinScreen.classList.add('hidden');
+            document.getElementById('app').classList.add('active');
+          }
+
+          document.getElementById('join-btn').addEventListener('click', doJoin);
+          document.getElementById('join-name-input').addEventListener('keydown', e => { if (e.key === 'Enter') doJoin(); });
+          document.getElementById('join-name-input').focus();
+        }
+      }
+
+      // ---- Session tab: create + render ----
+      document.getElementById('session-create-btn').addEventListener('click', () => {
+        const inp = document.getElementById('session-name-input');
+        const name = inp.value.trim() || 'Training Session';
+        const sessions = getSessions();
+        const code = genCode();
+        sessions.unshift({ code, name, created: Date.now() });
+        saveSessions(sessions);
+        inp.value = '';
+        renderSessions();
+      });
+
+      window.deleteSession = function(idx) {
+        const sessions = getSessions();
+        sessions.splice(idx, 1);
+        saveSessions(sessions);
+        renderSessions();
+      };
+
+      window.renderSessions = function() {
+        const container = document.getElementById('sessions-list');
+        if (!container) return;
+        const sessions = getSessions();
+        if (!sessions.length) {
+          container.innerHTML = '<div class="session-empty">No sessions yet.<br>Create one above and share the URL with your staff.</div>';
+          return;
+        }
+        container.innerHTML = sessions.map((s, idx) => {
+          const url = getSessionUrl(s.code);
+          const parts = getParticipants(s.code);
+          const rows = parts.length ? parts.map(p => {
+            const pk = 's_' + s.code + '_' + p.name.replace(/\s+/g, '_');
+            const boxes = JSON.parse(localStorage.getItem('icc_leitner_' + pk) || '{}');
+            const mastered = Object.values(boxes).filter(v => v >= 5).length;
+            const sc = JSON.parse(localStorage.getItem('icc_scores_' + pk) || '{"mcCorrect":0,"mcTotal":0}');
+            const acc = sc.mcTotal ? Math.round(sc.mcCorrect / sc.mcTotal * 100) + '%' : '—';
+            return `<div class="session-participant-row">
+              <div class="participant-name">${p.name}</div>
+              <div class="participant-stats">${mastered} mastered &middot; ${acc} acc.</div>
+            </div>`;
+          }).join('') : '<div style="color:rgba(255,255,255,0.35);font-size:.85em;padding:6px 0">No participants yet</div>';
+
+          const safeUrl = url.replace(/'/g, "\\'");
+          return `<div class="session-item">
+            <div class="session-item-header">
+              <div>
+                <div class="session-item-name">${s.name}</div>
+                <div style="font-size:.78em;color:var(--gray-400);margin-top:2px">${new Date(s.created).toLocaleDateString()}</div>
+              </div>
+              <div style="text-align:right">
+                <div class="session-code-badge">${s.code}</div>
+                <div style="font-size:.75em;color:var(--gray-400);margin-top:2px">${parts.length} joined</div>
+              </div>
+            </div>
+            <div class="session-url-row">
+              <div class="session-url-text">${url}</div>
+              <button class="session-copy-btn" onclick="navigator.clipboard.writeText('${safeUrl}').then(()=>{this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1500)})">Copy</button>
+            </div>
+            <div class="session-participants-section">
+              <h4>Participants (${parts.length})</h4>
+              ${rows}
+            </div>
+            <div style="text-align:right;margin-top:10px">
+              <button class="session-delete-btn" onclick="deleteSession(${idx})">Delete</button>
+            </div>
+          </div>`;
+        }).join('');
+      };
+
+      renderSessions();
+    })();
 
     function showRecallFallback() {
       var micBox = document.getElementById("mic-box");
