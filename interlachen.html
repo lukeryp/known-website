@@ -331,6 +331,11 @@
 .production-fallback-btn.missed{background:rgba(255,107,107,.15);color:#ff6b6b}
 .production-context{font-size:.85em;color:var(--text-secondary);margin-top:12px}
 .production-timer{font-size:.8em;color:var(--text-muted);margin-top:4px}
+
+@keyframes micPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.88); }
+}
 </style>
 </head>
 <body>
@@ -1046,49 +1051,10 @@ let productionTimeout = null;
         ${badge}
         <div class="member-photo">${ftImg(g)}</div>
         ${contextAnchors(g)}
-        <button class="recall-reveal" id="reveal-btn">Tap to Reveal</button>
-        <div class="member-details hidden" id="q-details"></div>
-        <div class="recall-self-btns hidden" id="self-btns">
-          <button class="btn-got-it" id="btn-got">✓ Got it</button>
-          <button class="btn-missed-it" id="btn-missed">✗ Missed</button>
-        </div>
-        <div class="tap-hint" id="tap-hint">Tap anywhere for next</div>
+        <div id="mic-box" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:16px;padding:24px;width:85%;margin:0 auto;min-height:110px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px"><div id="mic-pulse-icon" style="font-size:28px;animation:micPulse 1.2s infinite">🎤</div><div style="font-size:14px;color:rgba(255,255,255,0.5);margin-top:4px">Say this member’s name</div><div id="transcript-live" style="font-size:18px;color:rgba(255,255,255,0.9);font-style:italic;min-height:28px;margin-top:4px"></div></div>
+        <div id="tap-hint" style="text-align:center;font-size:13px;color:rgba(255,255,255,0.3);margin-top:16px;opacity:0;transition:opacity 0.3s"></div>
       `;
-      document.getElementById('reveal-btn').addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (answered) return;
-        document.getElementById('reveal-btn').classList.add('hidden');
-        showDetails(g, idx);
-        updateProgress();
-        document.getElementById('self-btns').classList.remove('hidden');
-      });
-      document.getElementById('btn-got').addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (answered) return;
-        answered = true;
-        document.getElementById('self-btns').classList.add('hidden');
-        promoteBox(idx);
-        const srResponseMs = Date.now() - cardStart;
-        scheduleReview(idx, getBox(idx), srResponseMs, 'recall');
-        recordScore('recall', true);
-        logQuizEntry(idx, 'recall', true, srResponseMs);
-          if (sessionActive) trackSessionResult(idx, true, 'recall', srResponseMs);
-        setTimeout(() => { tapReady = true; document.getElementById('tap-hint').classList.add('show'); }, 300);
-      });
-      document.getElementById('btn-missed').addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (answered) return;
-        answered = true;
-        document.getElementById('self-btns').classList.add('hidden');
-        demoteBox(idx);
-        const missedMs = Date.now() - cardStart;
-        scheduleReview(idx, getBox(idx), missedMs, 'recall');
-        recordScore('recall', false);
-        logQuizEntry(idx, 'recall', false, missedMs);
-        if (sessionActive) trackSessionResult(idx, false, 'recall', missedMs);
-        setTimeout(() => { tapReady = true; document.getElementById('tap-hint').classList.add('show'); }, 300);
-      });
-    }
+        startRecallMic(g, idx);
   }
 
   function showDetails(g, idx) {
@@ -1872,6 +1838,155 @@ function showProductionFallback(idx) {
       '</div>';
   }
 }
+
+    // ===== RECALL MIC MODE =====
+    const _MicSR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let _micRecog = null;
+    let _micCardStart = 0;
+    let _micFirstPhoneme = null;
+    let _micMember = null;
+    let _micMemberIdx = null;
+    let _micResultShown = false;
+
+    function startRecallMic(member, idx) {
+      _micMember = member;
+      _micMemberIdx = idx;
+      _micCardStart = performance.now();
+      _micFirstPhoneme = null;
+      _micResultShown = false;
+      if (!_MicSR || localStorage.getItem("mic_permission") === "denied") {
+        showRecallFallback();
+        return;
+      }
+      try {
+        _micRecog = new _MicSR();
+        _micRecog.continuous = true;
+        _micRecog.interimResults = true;
+        _micRecog.lang = "en-US";
+        _micRecog.maxAlternatives = 3;
+        _micRecog.onresult = onMicRecallResult;
+        _micRecog.onerror = function(e) {
+          if (e.error === "not-allowed") {
+            localStorage.setItem("mic_permission", "denied");
+            showRecallFallback();
+          }
+        };
+        _micRecog.onend = function() {
+          if (!_micResultShown) {
+            try { _micRecog.start(); } catch(ex) {}
+          }
+        };
+        _micRecog.start();
+        localStorage.setItem("mic_permission", "granted");
+      } catch(e) { showRecallFallback(); }
+    }
+
+    function stopRecallMic() {
+      if (_micRecog) {
+        try { _micRecog.stop(); } catch(e) {}
+        _micRecog = null;
+      }
+    }
+    function onMicRecallResult(event) {
+      if (_micResultShown) return;
+      var results = Array.from(event.results);
+      var transcript = results.map(function(r) { return r[0].transcript; }).join("").trim();
+      if (!_micFirstPhoneme && transcript.length > 0) {
+        _micFirstPhoneme = performance.now() - _micCardStart;
+      }
+      var liveEl = document.getElementById("transcript-live");
+      if (liveEl) liveEl.textContent = transcript;
+      var last = results[results.length - 1];
+      if (!last.isFinal) return;
+      var matched = recallNameMatch(transcript, _micMember);
+      var rt = _micFirstPhoneme || (performance.now() - _micCardStart);
+      showRecallMicResult(matched, rt, transcript);
+    }
+
+    function recallNameMatch(spoken, member) {
+      var s = spoken.toLowerCase().trim();
+      var last = (member.last || member.lastName || (member.name ? member.name.split(" ").pop() : "")).toLowerCase();
+      var first = (member.first || member.firstName || (member.name ? member.name.split(" ")[0] : "")).toLowerCase();
+      if (!last) return false;
+      if (s === last) return true;
+      if (s === first + " " + last || s === last + " " + first) return true;
+      if (s.includes(last)) return true;
+      var stripped = s.replace(/^(mr|mrs|ms|dr|miss|coach)\.?\s+/, "");
+      if (stripped === last || stripped.includes(last)) return true;
+      if (typeof levenshtein === "function" && levenshtein(s, last) <= 2) return true;
+      if (typeof levenshtein === "function" && levenshtein(stripped, last) <= 2) return true;
+      if (last.length > 3 && recallSoundex(s) === recallSoundex(last)) return true;
+      return false;
+    }
+
+    function recallSoundex(s) {
+      var codes = {A:0,E:0,I:0,O:0,U:0,H:0,W:0,Y:0,B:1,F:1,P:1,V:1,C:2,G:2,J:2,K:2,Q:2,S:2,X:2,Z:2,D:3,T:3,L:4,M:5,N:5,R:6};
+      var a = s.toUpperCase().split("");
+      if (!a.length) return "0000";
+      return (a[0] + a.slice(1).map(function(c) { var v = codes[c]; return v !== undefined ? v : ""; }).filter(function(c, i, arr) { return c !== "" && c !== 0 && c !== arr[i-1]; }).slice(0,3).join("")).padEnd(4,"0");
+    }
+    function showRecallMicResult(correct, rtMs, spoken) {
+      _micResultShown = true;
+      stopRecallMic();
+      var speed = typeof getSpeedGrade === "function" ? getSpeedGrade(rtMs, "production") : "M";
+      if (correct) {
+        if (typeof promoteBox === "function") promoteBox(_micMemberIdx);
+      } else {
+        if (typeof demoteBox === "function") demoteBox(_micMemberIdx);
+      }
+      if (typeof logQuizEntry === "function") logQuizEntry(_micMemberIdx, "production", correct, Math.round(rtMs));
+      if (typeof scheduleReview === "function") scheduleReview(_micMemberIdx, speed);
+      if (typeof trackSessionResult === "function") trackSessionResult(correct);
+      if (typeof updateSessionProgress === "function") updateSessionProgress();
+      var micBox = document.getElementById("mic-box");
+      if (!micBox) return;
+      var pulseIcon = document.getElementById("mic-pulse-icon");
+      if (pulseIcon) pulseIcon.style.animation = "none";
+      if (correct) {
+        micBox.style.background = "rgba(0,175,81,0.15)";
+        micBox.style.border = "1px solid rgba(0,175,81,0.4)";
+        micBox.innerHTML = '<div style="font-size:32px">\u2713</div><div style="font-size:20px;color:#00af51;font-weight:600;margin-top:8px">Correct</div><div style="font-size:14px;color:rgba(255,255,255,0.5);margin-top:4px">"'+ spoken +'"</div>';
+      } else {
+        micBox.style.background = "rgba(239,68,68,0.12)";
+        micBox.style.border = "1px solid rgba(239,68,68,0.3)";
+        var ln = _micMember.last || _micMember.lastName || (_micMember.name ? _micMember.name.split(" ").pop() : "");
+        var fn = _micMember.first || _micMember.firstName || (_micMember.name ? _micMember.name.split(" ")[0] : "");
+        micBox.innerHTML = '<div style="font-size:32px">\u2717</div><div style="font-size:20px;color:#ef4444;font-weight:600;margin-top:8px">' + fn + " " + ln + '</div><div style="font-size:13px;color:rgba(255,255,255,0.4);margin-top:4px">' + (spoken ? 'You said: "' + spoken + '"' : "No name detected") + "</div>";
+      }
+      var tapHint = document.getElementById("tap-hint");
+      if (tapHint) { tapHint.style.opacity = "1"; tapHint.textContent = "Tap anywhere to continue"; }
+      setTimeout(function() {
+        document.addEventListener("click", advanceRecallCard, { once: true });
+        document.addEventListener("touchend", advanceRecallCard, { once: true });
+      }, 300);
+    }
+    function advanceRecallCard() {
+      document.removeEventListener("click", advanceRecallCard);
+      document.removeEventListener("touchend", advanceRecallCard);
+      stopRecallMic();
+      if (typeof sessionActive !== "undefined" && sessionActive) {
+        sessionCardIndex++;
+        if (sessionCardIndex < sessionQueue.length) {
+          nextQuestion();
+        } else if (typeof showSessionSummary === "function") {
+          showSessionSummary();
+        }
+      } else {
+        nextQuestion();
+      }
+    }
+
+    function showRecallFallback() {
+      var micBox = document.getElementById("mic-box");
+      if (!micBox) return;
+      micBox.innerHTML = '<div style="font-size:14px;color:rgba(255,255,255,0.5);margin-bottom:16px">Say the member\u2019s name out loud, then tap your result.</div><div style="display:flex;flex-direction:column;gap:10px"><button id="sr-correct" style="padding:14px;background:rgba(0,175,81,0.15);border:1px solid rgba(0,175,81,0.4);border-radius:10px;color:#00af51;font-size:16px;cursor:pointer;font-weight:600">\u2713  Said it correctly</button><button id="sr-incorrect" style="padding:14px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:10px;color:#ef4444;font-size:16px;cursor:pointer;font-weight:600">\u2717  Couldn\u2019t remember</button></div>';
+      document.getElementById("sr-correct").addEventListener("click", function() {
+        showRecallMicResult(true, performance.now() - _micCardStart, "self-reported");
+      });
+      document.getElementById("sr-incorrect").addEventListener("click", function() {
+        showRecallMicResult(false, performance.now() - _micCardStart, "");
+      });
+    }
 </script>
 </body>
   </html>
