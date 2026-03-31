@@ -227,6 +227,21 @@
       display: block; opacity: 1;
     }
     .member-photo, .mini-photo, .photo-lg { overflow: hidden; }
+
+    /* PRODUCTION MODE */
+    .production-badge { display: inline-block; padding: 4px 10px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; background: rgba(200,169,81,0.18); border: 1px solid var(--gold-dim); border-radius: 20px; color: var(--gold); margin-bottom: 14px; text-transform: uppercase; }
+    .mic-indicator { display: inline-flex; align-items: center; gap: 8px; margin: 14px 0 6px; padding: 10px 20px; border-radius: 24px; font-size: 14px; font-weight: 600; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); color: var(--gray-400); transition: background 0.3s, border-color 0.3s, color 0.3s; }
+    .mic-indicator.listening { background: rgba(200,169,81,0.12); border-color: var(--gold-dim); color: var(--gold); }
+    .mic-indicator.matched { background: rgba(34,197,94,0.15); border-color: var(--green-ok); color: var(--green-ok); }
+    .mic-indicator.missed { background: rgba(239,68,68,0.15); border-color: var(--red); color: var(--red); }
+    .mic-dot { width: 10px; height: 10px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+    .mic-dot.pulse { animation: micPulse 1.2s ease-in-out infinite; }
+    @keyframes micPulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.5); opacity: 0.5; } }
+    .prod-heard { font-size: 13px; color: var(--gray-400); margin: 4px 0 8px; min-height: 20px; font-style: italic; }
+    .prod-heard.active { color: var(--white); }
+    .prod-conf-bar { width: 120px; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; margin: 4px auto 12px; overflow: hidden; }
+    .prod-conf-bar .fill { height: 100%; background: var(--green-ok); border-radius: 2px; transition: width 0.3s; }
+    .production-skip { margin-top: 8px; padding: 10px 24px; font-size: 13px; font-weight: 600; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; color: var(--gray-400); cursor: pointer; }
     @media (min-width: 600px) {
       .quiz-card { max-width: 440px; }
       .member-photo { width: 210px; height: 210px; }
@@ -374,6 +389,7 @@
           <div class="mode-toggle">
             <button class="active" data-mode="quiz">Multiple Choice</button>
             <button data-mode="recall">Recall</button>
+            <button data-mode="production">Production</button>
           </div>
           <div class="tier-filters">
             <button class="active" data-tier="1">T1 (87)</button>
@@ -556,6 +572,7 @@
   const tabBtns = document.querySelectorAll('.tab-bar button');
   const tabPanes = document.querySelectorAll('.tab-pane');
   tabBtns.forEach(btn => btn.addEventListener('click', () => {
+    if (btn.dataset.tab !== 'learn') stopProduction();
     tabBtns.forEach(b => b.classList.remove('active'));
     tabPanes.forEach(p => p.classList.remove('active'));
     btn.classList.add('active');
@@ -820,6 +837,7 @@ let productionTimeout = null;
     btn.addEventListener('click', () => {
       document.querySelectorAll('.mode-toggle button').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
+      if (quizMode === 'production') stopProduction();
       quizMode = btn.dataset.mode;
       nextQuestion();
     });
@@ -896,7 +914,9 @@ let productionTimeout = null;
     currentQ = idx;
     const g = GOLFERS[idx];
 
-    if (quizMode === 'recall' || isInRecallMode(idx)) {
+    if (quizMode === 'production') {
+      renderProduction(g, idx);
+    } else if (quizMode === 'recall' || isInRecallMode(idx)) {
       renderRecall(g, idx, isInRecallMode(idx));
     } else {
       renderQuiz(g, idx);
@@ -1073,6 +1093,229 @@ let productionTimeout = null;
     `;
   }
 
+  // ===== PRODUCTION MODE =====
+  let _prodRecognition = null;
+  let _prodActive = false;
+
+  function levenshtein(a, b) {
+    const m = a.length, n = b.length;
+    const dp = Array.from({length: m + 1}, (_, i) =>
+      Array.from({length: n + 1}, (_, j) => i ? (j ? 0 : i) : j));
+    for (let i = 1; i <= m; i++)
+      for (let j = 1; j <= n; j++)
+        dp[i][j] = a[i-1] === b[j-1] ? dp[i-1][j-1]
+          : 1 + Math.min(dp[i-1][j-1], dp[i-1][j], dp[i][j-1]);
+    return dp[m][n];
+  }
+
+  function soundex(s) {
+    s = s.toUpperCase().replace(/[^A-Z]/g, '');
+    if (!s) return '';
+    const map = {B:1,F:1,P:1,V:1,C:2,G:2,J:2,K:2,Q:2,S:2,X:2,Z:2,D:3,T:3,L:4,M:5,N:5,R:6};
+    let code = s[0], prev = map[s[0]] || 0;
+    for (let i = 1; i < s.length && code.length < 4; i++) {
+      const c = map[s[i]];
+      if (c && c !== prev) code += c;
+      prev = c || 0;
+    }
+    return (code + '000').slice(0, 4);
+  }
+
+  function fuzzyNameMatch(spoken, g) {
+    spoken = spoken.toLowerCase().trim();
+    const first = (g.first || '').toLowerCase();
+    const last  = (g.last  || '').toLowerCase();
+    const full  = (first + ' ' + last).trim();
+    const rev   = (last + ' ' + first).trim();
+    // Exact / contains
+    if (spoken === first || spoken === last || spoken === full || spoken === rev)
+      return { match: true, confidence: 1.0 };
+    if (last.length >= 3 && spoken.includes(last))   return { match: true, confidence: 0.9 };
+    if (first.length >= 3 && spoken.includes(first)) return { match: true, confidence: 0.75 };
+    // Per-word checks against last & first
+    const words = spoken.split(/\s+/);
+    for (const w of words) {
+      if (w.length < 3) continue;
+      if (soundex(w) === soundex(last))  return { match: true, confidence: 0.72 };
+      if (soundex(w) === soundex(first)) return { match: true, confidence: 0.62 };
+      const tl = Math.max(1, Math.floor(last.length  * 0.35));
+      const tf = Math.max(1, Math.floor(first.length * 0.35));
+      const dl = levenshtein(w, last);
+      const df = levenshtein(w, first);
+      if (dl <= tl) return { match: true, confidence: Math.max(0.4, 1 - dl / last.length) };
+      if (df <= tf) return { match: true, confidence: Math.max(0.35, 1 - df / first.length) };
+    }
+    // Full-string Levenshtein against last name
+    const tl = Math.max(1, Math.floor(last.length * 0.35));
+    const dl = levenshtein(spoken, last);
+    if (dl <= tl) return { match: true, confidence: Math.max(0.4, 1 - dl / last.length) };
+    return { match: false, confidence: 0 };
+  }
+
+  function stopProduction() {
+    _prodActive = false;
+    if (_prodRecognition) {
+      try { _prodRecognition.stop(); } catch(e) {}
+      _prodRecognition = null;
+    }
+  }
+
+  function renderProduction(g, idx) {
+    stopProduction();
+    _prodActive = true;
+    const cardStart = Date.now();
+    quizCard.innerHTML = `
+      <div class="production-badge">&#127908; Production Mode</div>
+      <div class="member-photo">${ftImg(g)}</div>
+      ${contextAnchors(g)}
+      <div class="mic-indicator listening" id="prod-mic">
+        <div class="mic-dot pulse" id="prod-dot"></div>
+        <span id="prod-status">Listening…</span>
+      </div>
+      <div class="prod-heard" id="prod-heard">&nbsp;</div>
+      <div class="prod-conf-bar" id="prod-conf-bar" style="visibility:hidden">
+        <div class="fill" id="prod-conf-fill" style="width:0%"></div>
+      </div>
+      <button class="production-skip" id="prod-skip">Skip →</button>
+      <div class="member-details hidden" id="q-details"></div>
+      <div class="tap-hint" id="tap-hint">Tap anywhere for next</div>
+    `;
+    const micEl    = document.getElementById('prod-mic');
+    const dotEl    = document.getElementById('prod-dot');
+    const statusEl = document.getElementById('prod-status');
+    const heardEl  = document.getElementById('prod-heard');
+    const confBar  = document.getElementById('prod-conf-bar');
+    const confFill = document.getElementById('prod-conf-fill');
+    const skipBtn  = document.getElementById('prod-skip');
+    let resolved = false;
+
+    function resolve(correct, heardText, confidence) {
+      if (resolved) return;
+      resolved = true;
+      stopProduction();
+      dotEl.classList.remove('pulse');
+      micEl.classList.remove('listening');
+      micEl.classList.add(correct ? 'matched' : 'missed');
+      statusEl.textContent = correct ? '✓ Matched!' : '✗ No match';
+      heardEl.textContent = heardText ? '"' + heardText + '"' : '';
+      heardEl.classList.add('active');
+      confBar.style.visibility = '';
+      confFill.style.width = Math.round(confidence * 100) + '%';
+      skipBtn.textContent = 'Next →';
+      if (correct) promoteBox(idx); else demoteBox(idx);
+      recordScore('recall', correct);
+      logQuizEntry(idx, 'recall', correct, Date.now() - cardStart);
+      showDetails(g, idx);
+      updateProgress();
+      answered = true;
+      if (correct) {
+        setTimeout(() => {
+          if (quizMode === 'production') goToNext();
+        }, 1400);
+      } else {
+        setTimeout(() => {
+          tapReady = true;
+          const th = document.getElementById('tap-hint');
+          if (th) th.classList.add('show');
+        }, 300);
+      }
+    }
+
+    skipBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (resolved) { goToNext(); return; }
+      resolved = true;
+      stopProduction();
+      demoteBox(idx);
+      recordScore('recall', false);
+      logQuizEntry(idx, 'recall', false, Date.now() - cardStart);
+      showDetails(g, idx);
+      updateProgress();
+      answered = true;
+      tapReady = true;
+      dotEl.classList.remove('pulse');
+      micEl.classList.remove('listening');
+      statusEl.textContent = 'Skipped';
+      skipBtn.textContent = 'Next →';
+      const th = document.getElementById('tap-hint');
+      if (th) th.classList.add('show');
+    });
+
+    const SRClass = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SRClass) {
+      statusEl.textContent = 'Speech API not supported';
+      dotEl.classList.remove('pulse');
+      micEl.classList.remove('listening');
+      return;
+    }
+
+    function startListening() {
+      if (!_prodActive || resolved) return;
+      const sr = new SRClass();
+      _prodRecognition = sr;
+      sr.continuous = false;
+      sr.interimResults = true;
+      sr.lang = 'en-US';
+      sr.maxAlternatives = 5;
+
+      sr.onstart = () => {
+        if (!resolved) {
+          statusEl.textContent = 'Listening…';
+          micEl.classList.remove('missed', 'matched');
+          micEl.classList.add('listening');
+          dotEl.classList.add('pulse');
+        }
+      };
+
+      sr.onresult = (event) => {
+        if (resolved || !_prodActive) return;
+        let bestText = '', bestConf = 0, gotFinal = false;
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const result = event.results[i];
+          if (result.isFinal) gotFinal = true;
+          for (let j = 0; j < result.length; j++) {
+            const t = result[j].transcript.trim();
+            if (!t) continue;
+            if (!bestText) bestText = t;
+            const fm = fuzzyNameMatch(t, g);
+            if (fm.match && fm.confidence > bestConf) {
+              bestConf = fm.confidence;
+              bestText = t;
+            }
+          }
+          // Show interim text
+          if (!result.isFinal && result[0]) {
+            heardEl.textContent = '…' + result[0].transcript.trim();
+          }
+        }
+        if (gotFinal) {
+          heardEl.textContent = bestText ? '"' + bestText + '"' : '';
+          if (bestConf > 0) {
+            resolve(true, bestText, bestConf);
+          }
+          // No match on this final result — recognition will restart via onend
+        }
+      };
+
+      sr.onerror = (event) => {
+        if (event.error === 'no-speech' || event.error === 'aborted') {
+          if (_prodActive && !resolved) setTimeout(startListening, 200);
+        } else {
+          statusEl.textContent = 'Mic: ' + event.error;
+          dotEl.classList.remove('pulse');
+        }
+      };
+
+      sr.onend = () => {
+        if (_prodActive && !resolved) setTimeout(startListening, 150);
+      };
+
+      try { sr.start(); } catch(e) {}
+    }
+
+    startListening();
+  }
+
   // ===== SWIPE / DRAG NAVIGATION =====
   const quizHistory = []; // { idx, html } snapshots of answered cards
   let historyPos = null;  // null = live card; number = index into quizHistory
@@ -1130,7 +1373,8 @@ let productionTimeout = null;
           answered = false;
           tapReady = false;
           const g = GOLFERS[currentQ];
-          if (quizMode === 'recall') renderRecall(g, currentQ);
+          if (quizMode === 'production') renderProduction(g, currentQ);
+          else if (quizMode === 'recall') renderRecall(g, currentQ);
           else renderQuiz(g, currentQ);
           updateProgress();
         });
