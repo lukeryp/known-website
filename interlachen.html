@@ -299,9 +299,29 @@
     .add-profile-input:focus { border-color: var(--gold); }
     .add-profile-btn { padding: 7px 12px; font-size: 12px; font-weight: 600; background: var(--gold); color: var(--green-900); border: none; border-radius: 8px; cursor: pointer; }
 
+    /* ONBOARDING */
+    .onboard-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 2000; display: none; align-items: center; justify-content: center; padding: 24px; }
+    .onboard-overlay.show { display: flex; }
+    .onboard-card { background: linear-gradient(160deg, rgba(0,30,15,0.98) 0%, rgba(13,30,20,0.98) 100%); border: 1px solid var(--gold-dim); border-radius: 20px; width: 100%; max-width: 380px; padding: 32px 28px 24px; text-align: center; }
+    .onboard-step-dots { display: flex; justify-content: center; gap: 6px; margin-bottom: 24px; }
+    .onboard-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.2); transition: background 0.3s; }
+    .onboard-dot.active { background: var(--gold); }
+    .onboard-icon { font-size: 48px; margin-bottom: 16px; }
+    .onboard-title { font-family: Raleway, sans-serif; font-size: 1.3em; font-weight: 700; color: var(--gold); margin-bottom: 10px; }
+    .onboard-body { font-size: 0.9em; color: rgba(255,255,255,0.75); line-height: 1.55; margin-bottom: 24px; }
+    .onboard-name-select { width: 100%; padding: 12px 14px; font-size: 1em; background: rgba(255,255,255,0.07); border: 1px solid var(--gold-dim); border-radius: 10px; color: #fff; margin-bottom: 20px; outline: none; -webkit-appearance: none; cursor: pointer; }
+    .onboard-name-select:focus { border-color: var(--gold); }
+    .onboard-btn { width: 100%; padding: 13px; font-family: Raleway, sans-serif; font-size: 1em; font-weight: 700; background: var(--gold); color: var(--green-900); border: none; border-radius: 12px; cursor: pointer; letter-spacing: 0.5px; }
+    .onboard-btn:active { opacity: 0.85; }
+    .onboard-skip { margin-top: 12px; font-size: 0.78em; color: rgba(255,255,255,0.35); cursor: pointer; }
+    .onboard-skip:hover { color: rgba(255,255,255,0.6); }
+
     /* CSV IMPORT */
     .csv-import-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 4px; }
     .csv-import-label { padding: 6px 12px; font-size: 11px; font-weight: 600; background: rgba(200,169,81,0.15); border: 1px solid var(--gold-dim); border-radius: 6px; color: var(--gold); cursor: pointer; }
+    .csv-import-help { width: 18px; height: 18px; border-radius: 50%; border: 1px solid var(--gold-dim); color: var(--gold); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+    .csv-instructions { font-size: 11px; color: rgba(255,255,255,0.6); background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 10px 12px; margin-top: 4px; line-height: 1.6; }
+    .csv-instructions b { color: var(--gold); }
     .csv-status { font-size: 11px; color: var(--gray-400); }
   
     /* Session Summary */
@@ -323,6 +343,46 @@
     .session-wrong-meta{font-size:.8em;color:rgba(255,255,255,.5)}
     .session-again-btn{margin-top:20px;padding:14px 32px;background:#00af51;color:#fff;border:none;border-radius:12px;font-size:1.05em;font-weight:700;font-family:Raleway,sans-serif;cursor:pointer;width:100%;max-width:300px}
     .session-again-btn:active{transform:scale(.97)}
+
+/* Manager Dashboard */
+    .mgr-dashboard { padding: 16px; }
+    .mgr-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .mgr-header h3 { font-family: Raleway, sans-serif; font-size: 1.1em; font-weight: 700; color: var(--gold); margin: 0; }
+    .mgr-refresh-btn { padding: 6px 12px; font-size: 11px; font-weight: 600; background: rgba(200,169,81,0.15); border: 1px solid var(--gold-dim); border-radius: 6px; color: var(--gold); cursor: pointer; }
+    .mgr-summary-row { display: flex; gap: 10px; margin-bottom: 16px; }
+    .mgr-stat { flex: 1; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 12px 10px; text-align: center; }
+    .mgr-stat .val { font-size: 1.4em; font-weight: 700; color: var(--gold); }
+    .mgr-stat .lbl { font-size: 10px; color: var(--gray-400); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .mgr-staff-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 14px; margin-bottom: 10px; }
+    .mgr-staff-name { font-family: Raleway, sans-serif; font-size: 1em; font-weight: 700; margin-bottom: 10px; color: #fff; }
+    .mgr-bars { display: flex; flex-direction: column; gap: 6px; }
+    .mgr-bar-row { display: flex; align-items: center; gap: 8px; font-size: 11px; }
+    .mgr-bar-label { width: 68px; color: var(--gray-400); flex-shrink: 0; }
+    .mgr-bar-track { flex: 1; height: 7px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden; }
+    .mgr-bar-fill { height: 100%; border-radius: 4px; transition: width 0.6s ease; }
+    .mgr-bar-fill.mastery { background: var(--gold); }
+    .mgr-bar-fill.accuracy { background: #00af51; }
+    .mgr-bar-val { width: 32px; text-align: right; font-weight: 600; color: rgba(255,255,255,0.8); flex-shrink: 0; }
+    .mgr-tier-breakdown { display: flex; gap: 4px; margin-top: 8px; flex-wrap: wrap; }
+    .mgr-tier-chip { font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: 600; }
+    .mgr-no-data { color: rgba(255,255,255,0.3); font-size: 0.85em; font-style: italic; }
+    .mgr-last-active { font-size: 10px; color: var(--gray-400); margin-top: 6px; }
+    .mgr-section-title { font-family: Raleway, sans-serif; font-size: 0.85em; font-weight: 700; color: var(--gold); text-transform: uppercase; letter-spacing: 0.8px; margin: 20px 0 10px; }
+    .mgr-analytics-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 14px; margin-bottom: 10px; }
+    .mgr-chart-row { display: flex; align-items: flex-end; gap: 4px; height: 52px; margin: 8px 0 4px; }
+    .mgr-chart-bar { flex: 1; background: var(--gold); border-radius: 3px 3px 0 0; min-height: 2px; opacity: 0.85; transition: height 0.4s; }
+    .mgr-chart-bar.zero { background: rgba(255,255,255,0.08); }
+    .mgr-chart-labels { display: flex; gap: 4px; }
+    .mgr-chart-label { flex: 1; text-align: center; font-size: 9px; color: var(--gray-400); }
+    .mgr-hard-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 12px; }
+    .mgr-hard-row:last-child { border-bottom: none; }
+    .mgr-hard-rank { width: 18px; color: var(--gray-400); font-size: 11px; flex-shrink: 0; }
+    .mgr-hard-name { flex: 1; font-weight: 600; }
+    .mgr-hard-acc { color: var(--red, #ef4444); font-weight: 700; font-size: 11px; }
+    .mgr-tier-acc-row { display: flex; gap: 8px; margin-top: 4px; }
+    .mgr-tier-acc-chip { flex: 1; background: rgba(255,255,255,0.04); border-radius: 8px; padding: 8px 4px; text-align: center; }
+    .mgr-tier-acc-chip .val { font-size: 1.1em; font-weight: 700; }
+    .mgr-tier-acc-chip .lbl { font-size: 9px; color: var(--gray-400); margin-top: 2px; }
 
 /* Production Mode */
 .production-card{text-align:center;padding:20px 16px}
@@ -427,6 +487,7 @@
       <button data-tab="staff">Staff</button>
       <button data-tab="database">Database</button>
       <button data-tab="session">Session</button>
+      <button data-tab="manager" id="mgr-tab-btn" style="display:none">Manager</button>
     </div>
     <div class="tab-content">
       <!-- LEARN TAB -->
@@ -487,9 +548,17 @@
             </select>
           </div>
           <div class="csv-import-row">
-            <label class="csv-import-label" for="csv-file-input">⬇ Import CSV</label>
+            <label class="csv-import-label" for="csv-file-input">⬇ ForeTees Roster Import</label>
             <input type="file" id="csv-file-input" accept=".csv" style="display:none">
+            <span class="csv-import-help" id="csv-import-help">?</span>
             <span class="csv-status" id="csv-status"></span>
+          </div>
+          <div class="csv-instructions" id="csv-instructions" style="display:none">
+            <b>How to export from ForeTees:</b><br>
+            1. Log in → Reports → Member Roster Export<br>
+            2. Select: First, Last, Member#, Membership, Gender, Rounds18, Rounds9<br>
+            3. Export as CSV and import here.<br>
+            Tiers are auto-calculated from rounds played if not provided.
           </div>
         </div>
         <div class="db-list" id="db-list"></div>
@@ -504,6 +573,10 @@
           </div>
           <div id="sessions-list"></div>
         </div>
+      </div>
+      <!-- MANAGER TAB (hidden unless ?mgr=1) -->
+      <div class="tab-pane" id="tab-manager">
+        <div class="mgr-dashboard" id="mgr-dashboard"></div>
       </div>
     </div>
   </div>
@@ -536,6 +609,20 @@
         <input class="add-profile-input" id="new-profile-input" type="text" placeholder="Add staff name…" maxlength="30" autocomplete="off">
         <button class="add-profile-btn" id="add-profile-btn">Add</button>
       </div>
+    </div>
+  </div>
+
+  <!-- ONBOARDING MODAL -->
+  <div class="onboard-overlay" id="onboard-overlay">
+    <div class="onboard-card">
+      <div class="onboard-step-dots">
+        <div class="onboard-dot active" id="onboard-dot-0"></div>
+        <div class="onboard-dot" id="onboard-dot-1"></div>
+        <div class="onboard-dot" id="onboard-dot-2"></div>
+      </div>
+      <div id="onboard-content"></div>
+      <button class="onboard-btn" id="onboard-next-btn">Get Started</button>
+      <div class="onboard-skip" id="onboard-skip">Skip tutorial</div>
     </div>
   </div>
 
@@ -685,6 +772,7 @@
     document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
     if (btn.dataset.tab === 'database') renderDB();
     if (btn.dataset.tab === 'session') renderSessions();
+    if (btn.dataset.tab === 'manager' && window.renderMgrDashboard) renderMgrDashboard();
   }));
 
   // ===== LEARN TAB =====
@@ -718,9 +806,12 @@ let productionTimeout = null;
   function pKey(key) { return key + '_' + getCurrentProfile().replace(/\s+/g,'_'); }
 
   // Migrate legacy (non-profile) data to Guest on first load
+  // Also seed STAFF first names so they appear in dropdown without manual entry
   (function migrateLegacy() {
-    const profiles = getProfiles();
-    if (!profiles.includes('Guest')) { profiles.unshift('Guest'); saveProfiles(profiles); }
+    let profiles = getProfiles();
+    if (!profiles.includes('Guest')) { profiles.unshift('Guest'); }
+    STAFF.map(s => s.name.split(' ')[0]).forEach(n => { if (!profiles.includes(n)) profiles.push(n); });
+    saveProfiles(profiles);
     const lk = 'icc_leitner';
     if (localStorage.getItem(lk) && !localStorage.getItem(lk + '_Guest')) {
       localStorage.setItem(lk + '_Guest', localStorage.getItem(lk));
@@ -767,11 +858,17 @@ let productionTimeout = null;
   const MC_ACC_KEY = 'icc_mc_accuracy';
   let mcAccuracy = JSON.parse(localStorage.getItem(pKey('icc_mc_accuracy')) || '{}');
   function saveMcAccuracy() { localStorage.setItem(pKey(MC_ACC_KEY), JSON.stringify(mcAccuracy)); }
+  function touchLastActive() {
+    const d = new Date();
+    const s = (d.getMonth()+1)+'/'+d.getDate()+' '+d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    localStorage.setItem('icc_last_active_' + getCurrentProfile().replace(/\s+/g,'_'), s);
+  }
   function recordMcAnswer(listIdx, correct) {
     if (!mcAccuracy[listIdx]) mcAccuracy[listIdx] = { correct: 0, total: 0 };
     mcAccuracy[listIdx].total++;
     if (correct) mcAccuracy[listIdx].correct++;
     saveMcAccuracy();
+    touchLastActive();
   }
   function shouldAutoAdvanceToRecall(listIdx) {
     const acc = mcAccuracy[listIdx];
@@ -857,7 +954,7 @@ let productionTimeout = null;
   function logQuizEntry(memberIdx, mode, correct, responseTimeMs) {
     const hist = getHistory();
     hist.unshift({ ts: Date.now(), profile: getCurrentProfile(), memberIdx, mode, correct, ms: Math.round(responseTimeMs) });
-    if (hist.length > 100) hist.length = 100;
+    if (hist.length > 500) hist.length = 500;
     localStorage.setItem(pKey(HIST_KEY), JSON.stringify(hist));
     touchStreak();
   }
@@ -1039,13 +1136,22 @@ let productionTimeout = null;
   }
 
   function renderQuiz(g, idx) {
-    // Pick 3 wrong answers: same gender first, then same tier, fall back as needed
+    // Pick 3 wrong answers: same-gender + same-tier preferred
+    // Items 11 & 12: score candidates by length-similarity and confusability
+    const targetLen = displayName(g).length;
     const isMale = i => GOLFERS[i].memberType.includes('Male') && !GOLFERS[i].memberType.includes('Female');
     const genderMatch = i => isMale(i) === isMale(idx);
     const sameTierGender = GOLFERS.map((_, i) => i).filter(i => i !== idx && genderMatch(i) && GOLFERS[i].tier === g.tier);
     const sameGender = GOLFERS.map((_, i) => i).filter(i => i !== idx && genderMatch(i));
     let pool = sameTierGender.length >= 3 ? sameTierGender : sameGender;
-    let shuffled = pool.slice().sort(() => Math.random() - 0.5).slice(0, 3);
+    // Score: prefer similar name length (±4 chars) and same last/first initial (confusable)
+    const scored = pool.map(i => {
+      const dLen = Math.abs(displayName(GOLFERS[i]).length - targetLen);
+      const lenScore = dLen <= 2 ? 3 : dLen <= 4 ? 2 : dLen <= 7 ? 1 : 0;
+      const initScore = (GOLFERS[i].last[0] === g.last[0] ? 2 : 0) + (GOLFERS[i].first[0] === g.first[0] ? 1 : 0);
+      return { i, score: lenScore + initScore + Math.random() * 0.5 };
+    }).sort((a, b) => b.score - a.score);
+    let shuffled = scored.slice(0, 3).map(x => x.i);
     // If pool still too small, pad with synthetic name-only distractors using gender-consistent names
     if (shuffled.length < 3) {
       const namePool = isMale(idx) ? MALE_NAMES : FEMALE_NAMES;
@@ -1783,8 +1889,10 @@ let productionTimeout = null;
     const rounds18 = parseInt(get('rounds18','18hole','18 hole rounds','18-hole')) || 0;
     const rounds9  = parseInt(get('rounds9','9hole','9 hole rounds','9-hole')) || 0;
     const roundsTotal = parseInt(get('roundstotal','total rounds','totalrounds','rounds')) || (rounds18 + rounds9);
-    const tier = parseInt(get('tier')) || 4;
-    const ft = parseInt(get('ft','foretees','foretees id')) || 0;
+    // Auto-calculate tier from rounds if not explicitly provided
+    const rawTier = parseInt(get('tier'));
+    const tier = rawTier || (roundsTotal >= 40 ? 1 : roundsTotal >= 15 ? 2 : roundsTotal >= 5 ? 3 : 4);
+    const ft = parseInt(get('ft','foretees','foretees id','member id')) || 0;
     const phone = get('phone','p','cell','mobile');
     const email = get('email','e','emailaddress');
     if (!first && !last) return null;
@@ -1812,6 +1920,11 @@ let productionTimeout = null;
     if (top.length) lists.push({ name: 'Imported: High-Frequency Players', due: '2026-12-31', ids: top });
     return lists;
   }
+
+  document.getElementById('csv-import-help').addEventListener('click', function() {
+    const el = document.getElementById('csv-instructions');
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  });
 
   document.getElementById('csv-file-input').addEventListener('change', function() {
     const file = this.files[0];
@@ -2481,6 +2594,245 @@ function showProductionFallback(idx) {
         showRecallMicResult(false, performance.now() - _micCardStart, "");
       });
     }
+
+  // ===== ONBOARDING =====
+  (function initOnboarding() {
+    const ONBOARD_KEY = 'icc_onboarded_v1';
+    if (localStorage.getItem(ONBOARD_KEY)) return; // already seen
+
+    const steps = [
+      {
+        icon: '👋',
+        title: 'Welcome to Known',
+        body: 'Known helps Interlachen staff learn every member\'s name before they reach the first tee.<br><br>Pick your name below so your progress is saved just for you.',
+        showNameSelect: true,
+        btn: 'Next →'
+      },
+      {
+        icon: '📸',
+        title: 'How It Works',
+        body: 'You\'ll see a member\'s photo. Choose the right name from 4 options.<br><br>The app tracks which members you know well and keeps drilling the ones you don\'t — so every face becomes familiar.',
+        btn: 'Next →'
+      },
+      {
+        icon: '🏆',
+        title: 'Three Modes',
+        body: '<b style="color:var(--gold)">Multiple Choice</b> — tap the right name.<br><br><b style="color:var(--gold)">Recall</b> — type it from memory.<br><br><b style="color:var(--gold)">Production</b> — say it out loud.<br><br>Start with Multiple Choice and work your way up.',
+        btn: 'Start Training'
+      }
+    ];
+
+    let step = 0;
+    const overlay = document.getElementById('onboard-overlay');
+    const content = document.getElementById('onboard-content');
+    const nextBtn = document.getElementById('onboard-next-btn');
+    const skipEl = document.getElementById('onboard-skip');
+
+    function renderStep() {
+      const s = steps[step];
+      [0,1,2].forEach(i => {
+        const dot = document.getElementById('onboard-dot-' + i);
+        if (dot) dot.classList.toggle('active', i === step);
+      });
+      const nameSelectHtml = s.showNameSelect ? `
+        <select class="onboard-name-select" id="onboard-name-sel">
+          ${getProfiles().map(p => `<option value="${p}"${p===getCurrentProfile()?' selected':''}>${p}</option>`).join('')}
+        </select>` : '';
+      content.innerHTML = `
+        <div class="onboard-icon">${s.icon}</div>
+        <div class="onboard-title">${s.title}</div>
+        ${nameSelectHtml}
+        <div class="onboard-body">${s.body}</div>`;
+      nextBtn.textContent = s.btn;
+      // Wire name selector immediately
+      const sel = document.getElementById('onboard-name-sel');
+      if (sel) sel.addEventListener('change', function() {
+        setCurrentProfile(this.value);
+        document.getElementById('profile-select').value = this.value;
+        mcAccuracy = JSON.parse(localStorage.getItem(pKey('icc_mc_accuracy')) || '{}');
+        updateScoresDisplay();
+      });
+    }
+
+    nextBtn.addEventListener('click', function() {
+      step++;
+      if (step >= steps.length) {
+        dismiss();
+      } else {
+        renderStep();
+      }
+    });
+
+    skipEl.addEventListener('click', dismiss);
+
+    function dismiss() {
+      localStorage.setItem(ONBOARD_KEY, '1');
+      overlay.classList.remove('show');
+    }
+
+    renderStep();
+    overlay.classList.add('show');
+  })();
+
+  // ===== MANAGER DASHBOARD =====
+  (function initManager() {
+    if (new URLSearchParams(window.location.search).get('mgr') !== '1') return;
+
+    // Show Manager tab button
+    const mgrBtn = document.getElementById('mgr-tab-btn');
+    if (mgrBtn) mgrBtn.style.display = '';
+
+    function getProfileStats(profileName) {
+      const key = profileName.replace(/\s+/g, '_');
+      const leitner = JSON.parse(localStorage.getItem('icc_leitner_' + key) || '{}');
+      const mastered = Object.values(leitner).filter(v => v >= 5).length;
+      const masteryPct = GOLFERS.length ? Math.round(mastered / GOLFERS.length * 100) : 0;
+      const scores = JSON.parse(localStorage.getItem('icc_scores_' + key) || '{"mcCorrect":0,"mcTotal":0}');
+      const accPct = scores.mcTotal ? Math.round(scores.mcCorrect / scores.mcTotal * 100) : null;
+      const mcAcc = JSON.parse(localStorage.getItem('icc_mc_accuracy_' + key) || '{}');
+      // Tier breakdown: count mastered per tier
+      const tierMastered = {1:0,2:0,3:0,4:0}, tierTotal = {1:0,2:0,3:0,4:0};
+      GOLFERS.forEach((g, i) => {
+        tierTotal[g.tier] = (tierTotal[g.tier]||0) + 1;
+        if ((leitner[i]||0) >= 5) tierMastered[g.tier] = (tierMastered[g.tier]||0) + 1;
+      });
+      const lastActive = localStorage.getItem('icc_last_active_' + key) || null;
+      const totalAnswered = Object.values(mcAcc).reduce((s,v) => s + (v.total||0), 0);
+      return { mastered, masteryPct, accPct, tierMastered, tierTotal, lastActive, totalAnswered };
+    }
+
+    function renderMgrDashboard() {
+      const profiles = getProfiles().filter(p => p !== 'Guest');
+      const allStats = profiles.map(p => ({ name: p, ...getProfileStats(p) }));
+      const avgMastery = allStats.length ? Math.round(allStats.reduce((s,x)=>s+x.masteryPct,0)/allStats.length) : 0;
+      const activeCount = allStats.filter(x => x.totalAnswered > 0).length;
+      const topPct = allStats.length ? Math.max(...allStats.map(x=>x.masteryPct)) : 0;
+
+      const tierColors = {1:'var(--tier1)',2:'var(--tier2)',3:'var(--tier3)',4:'var(--tier4)'};
+
+      document.getElementById('mgr-dashboard').innerHTML = `
+        <div class="mgr-header">
+          <h3>Manager Dashboard</h3>
+          <button class="mgr-refresh-btn" onclick="document.getElementById('mgr-dashboard').innerHTML='';renderMgrDashboard()">Refresh</button>
+        </div>
+        <div class="mgr-summary-row">
+          <div class="mgr-stat"><div class="val">${activeCount}/${profiles.length}</div><div class="lbl">Active Staff</div></div>
+          <div class="mgr-stat"><div class="val">${avgMastery}%</div><div class="lbl">Avg Mastery</div></div>
+          <div class="mgr-stat"><div class="val">${topPct}%</div><div class="lbl">Top Score</div></div>
+        </div>
+        ${allStats.map(s => `
+          <div class="mgr-staff-card">
+            <div class="mgr-staff-name">${s.name}</div>
+            ${s.totalAnswered === 0 ? `<div class="mgr-no-data">No activity yet</div>` : `
+            <div class="mgr-bars">
+              <div class="mgr-bar-row">
+                <div class="mgr-bar-label">Mastery</div>
+                <div class="mgr-bar-track"><div class="mgr-bar-fill mastery" style="width:${s.masteryPct}%"></div></div>
+                <div class="mgr-bar-val">${s.masteryPct}%</div>
+              </div>
+              ${s.accPct !== null ? `<div class="mgr-bar-row">
+                <div class="mgr-bar-label">Accuracy</div>
+                <div class="mgr-bar-track"><div class="mgr-bar-fill accuracy" style="width:${s.accPct}%"></div></div>
+                <div class="mgr-bar-val">${s.accPct}%</div>
+              </div>` : ''}
+            </div>
+            <div class="mgr-tier-breakdown">
+              ${[1,2,3,4].map(t => `<span class="mgr-tier-chip tier-badge t${t}">${s.tierMastered[t]||0}/${s.tierTotal[t]} T${t}</span>`).join('')}
+            </div>
+            <div class="mgr-last-active">${s.totalAnswered} answers total${s.lastActive ? ' · Last active ' + s.lastActive : ''}</div>`}
+          </div>`).join('')}
+        ${profiles.length === 0 ? '<div class="mgr-no-data" style="text-align:center;padding:32px">No staff profiles found.<br>Staff must select their name from the dropdown to appear here.</div>' : ''}
+        ${buildAnalyticsHTML(profiles)}
+      `;
+    }
+
+    function buildAnalyticsHTML(profiles) {
+      // Aggregate history across all staff profiles
+      const allHistory = [];
+      profiles.forEach(p => {
+        const key = p.replace(/\s+/g,'_');
+        const hist = JSON.parse(localStorage.getItem('icc_history_' + key) || '[]');
+        hist.forEach(h => allHistory.push(h));
+      });
+      if (!allHistory.length) return '';
+
+      // Last 7 days activity bar chart
+      const now = Date.now();
+      const DAY = 86400000;
+      const days = Array.from({length:7}, (_,i) => {
+        const d = new Date(now - (6-i)*DAY);
+        return { label: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()], count: 0, correct: 0 };
+      });
+      allHistory.forEach(h => {
+        const ago = Math.floor((now - h.ts) / DAY);
+        if (ago < 7) { days[6-ago].count++; if (h.correct) days[6-ago].correct++; }
+      });
+      const maxDay = Math.max(...days.map(d=>d.count), 1);
+      const chartBars = days.map(d => `<div class="mgr-chart-bar${d.count===0?' zero':''}" style="height:${Math.max(4,Math.round(d.count/maxDay*48))}px" title="${d.count} answers"></div>`).join('');
+      const chartLabels = days.map(d => `<div class="mgr-chart-label">${d.label}</div>`).join('');
+      const totalWeek = days.reduce((s,d)=>s+d.count,0);
+
+      // Hardest members: most wrong answers
+      const wrongCount = {}, totalCount = {};
+      allHistory.forEach(h => {
+        totalCount[h.memberIdx] = (totalCount[h.memberIdx]||0) + 1;
+        if (!h.correct) wrongCount[h.memberIdx] = (wrongCount[h.memberIdx]||0) + 1;
+      });
+      const hardest = Object.entries(wrongCount)
+        .filter(([i]) => (totalCount[i]||0) >= 3)
+        .map(([i,w]) => ({ i: parseInt(i), acc: Math.round((1 - w/(totalCount[i]||1))*100), total: totalCount[i]||0 }))
+        .sort((a,b) => a.acc - b.acc)
+        .slice(0, 5);
+
+      // Per-tier accuracy across all staff
+      const tierAcc = {1:{c:0,t:0},2:{c:0,t:0},3:{c:0,t:0},4:{c:0,t:0}};
+      allHistory.forEach(h => {
+        const g = GOLFERS[h.memberIdx];
+        if (!g) return;
+        tierAcc[g.tier].t++;
+        if (h.correct) tierAcc[g.tier].c++;
+      });
+
+      return `
+        <div class="mgr-section-title">Analytics</div>
+        <div class="mgr-analytics-card">
+          <div style="display:flex;justify-content:space-between;align-items:baseline">
+            <span style="font-size:.85em;font-weight:600">Last 7 Days</span>
+            <span style="font-size:.8em;color:var(--gray-400)">${totalWeek} answers</span>
+          </div>
+          <div class="mgr-chart-row">${chartBars}</div>
+          <div class="mgr-chart-labels">${chartLabels}</div>
+        </div>
+        ${hardest.length ? `
+        <div class="mgr-analytics-card">
+          <div style="font-size:.85em;font-weight:600;margin-bottom:8px">Hardest Members</div>
+          ${hardest.map((x,i) => {
+            const g = GOLFERS[x.i];
+            return `<div class="mgr-hard-row">
+              <div class="mgr-hard-rank">${i+1}</div>
+              <div class="mgr-hard-name">${g ? displayName(g) : 'Member #'+x.i}</div>
+              <div style="font-size:10px;color:var(--gray-400);margin-right:4px">${x.total} tries</div>
+              <div class="mgr-hard-acc">${x.acc}%</div>
+            </div>`;
+          }).join('')}
+        </div>` : ''}
+        <div class="mgr-analytics-card">
+          <div style="font-size:.85em;font-weight:600;margin-bottom:8px">Accuracy by Tier</div>
+          <div class="mgr-tier-acc-row">
+            ${[1,2,3,4].map(t => {
+              const acc = tierAcc[t].t ? Math.round(tierAcc[t].c/tierAcc[t].t*100) : null;
+              return `<div class="mgr-tier-acc-chip">
+                <div class="val tier-badge t${t}">${acc !== null ? acc+'%' : '—'}</div>
+                <div class="lbl">Tier ${t}</div>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>`;
+    }
+
+    window.renderMgrDashboard = renderMgrDashboard;
+    renderMgrDashboard();
+  })();
 </script>
 </body>
   </html>

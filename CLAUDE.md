@@ -41,9 +41,4 @@ GOLFERS array (1020 members) with fields:
 - Item 13: Password gate
 
 ### Remaining
-- Item 8: Staff selector wiring
-- Items 11-12: Scoring refinements
-- Item 14: Onboarding/tutorial
-- Item 15: ForeTees roster import
-- Item 16: Manager dashboard
-- Item 17: Analytics/reporting
+- (none — all 17 items complete)
