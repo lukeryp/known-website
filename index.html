@@ -240,18 +240,6 @@
     .footer-inner { flex-direction: column; gap: 20px; text-align: center; }
     .footer-right { text-align: center; }
   }
-
-  @media (max-width: 640px) {
-    .hero-headline { font-size: 32px !important; }
-    .section-headline { font-size: 26px !important; }
-    .cta-headline { font-size: 28px !important; }
-    .section-sub { font-size: 15px !important; }
-    .hero-sub { font-size: 15px !important; }
-    .demo-section { padding: 56px 16px !important; }
-    .cta-section { padding: 64px 20px !important; }
-    #demo .section-inner > div[style] { flex-direction: column !important; align-items: center !important; }
-    #demo [style*="min-width:280px"] { min-width: unset !important; width: 100% !important; max-width: 340px !important; }
-  }
 </style>
 </head>
 <body>
@@ -286,34 +274,29 @@
         <a href="#problem" class="btn-ghost">See the problem</a>
       </div>
     </div>
-
-  </div>
-</section>
-
-<section id="demo" class="demo-section">
-  <div class="section-inner" style="text-align:center;">
-    <div class="section-eyebrow" style="color:var(--gold);">Try It Now</div>
-    <h2 class="section-headline">See what your staff will experience.</h2>
-    <p class="section-sub" style="max-width:600px; margin:0 auto 40px;">Scan a QR code to try KNOWN on your phone. No signup required — just tap and start learning names.</p>
-    <div style="display:flex;gap:32px;justify-content:center;flex-wrap:wrap;margin:40px auto;max-width:700px;">
-      <div style="background:#1a2332;border-radius:16px;padding:32px;text-align:center;flex:1;min-width:280px;max-width:320px;">
-        <h3 style="color:#c9a84c;margin:0 0 8px;font-size:18px;">Woodmont Country Club</h3>
-        <p style="color:#8899aa;margin:0 0 20px;font-size:14px;">Open Demo — No password required</p>
-        <div id="qr-woodmont" style="background:white;padding:16px;border-radius:12px;display:inline-block;margin-bottom:16px;"></div>
-        <br><a href="https://known.golf/demo" style="color:#c9a84c;font-size:14px;">known.golf/demo</a>
-      </div>
-      <div style="background:#1a2332;border-radius:16px;padding:32px;text-align:center;flex:1;min-width:280px;max-width:320px;box-shadow:0 0 20px rgba(201,168,76,0.3);">
-        <h3 style="color:#c9a84c;margin:0 0 8px;font-size:18px;">Interlachen Country Club</h3>
-        <p style="color:#8899aa;margin:0 0 20px;font-size:14px;">Live Version &bull; Password Protected &bull; Install as App</p>
-        <div id="qr-interlachen" style="background:white;padding:16px;border-radius:12px;display:inline-block;margin-bottom:16px;"></div>
-        <br><a href="https://known.golf/interlachen" style="color:#c9a84c;font-size:14px;">known.golf/interlachen</a>
+    <div>
+      <div class="mock-app">
+        <div class="mock-header">
+          <span class="mock-logo">KNOWN</span>
+          <span class="mock-club">Oakmont Hills CC</span>
+        </div>
+        <div class="mock-card">
+          <div class="mock-photo">E M</div>
+          <div class="mock-question">Who is this member?</div>
+          <div class="mock-options">
+            <div class="mock-option">Charles W.</div>
+            <div class="mock-option correct">Eleanor M.</div>
+            <div class="mock-option">Thomas H.</div>
+            <div class="mock-option">Robert C.</div>
+          </div>
+        </div>
+        <div class="mock-footer">
+          <div class="mock-stat"><span class="mock-stat-val">B+</span><span class="mock-stat-label">Grade</span></div>
+          <div class="mock-stat"><span class="mock-stat-val">82%</span><span class="mock-stat-label">Mastery</span></div>
+          <div class="mock-stat"><span class="mock-stat-val">214</span><span class="mock-stat-label">Learned</span></div>
+        </div>
       </div>
     </div>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <script>
-      new QRCode(document.getElementById('qr-woodmont'),{text:'https://known.golf/demo',width:220,height:220,correctLevel:QRCode.CorrectLevel.H});
-      new QRCode(document.getElementById('qr-interlachen'),{text:'https://known.golf/interlachen',width:220,height:220,correctLevel:QRCode.CorrectLevel.H});
-    </script>
   </div>
 </section>
 
@@ -656,6 +639,32 @@
       </div>
     </div>
     <p style="text-align:center; margin-top:36px; font-size:15px; color:var(--muted); font-weight:300; font-style:italic;">If your staff aren't actively using KNOWN within 60 days, we refund everything.</p>
+  </div>
+</section>
+
+<section id="demo" class="demo-section">
+  <div class="section-inner" style="text-align:center;">
+    <div class="section-eyebrow" style="color:var(--gold); justify-content:center;">Try It Now</div>
+    <h2 class="section-headline">See what your staff will experience.</h2>
+    <p class="section-sub" style="max-width:620px; margin:0 auto 48px;">Take the KNOWN quiz with 40 fictional members at Oakland Hills Country Club. Multiple choice or recall mode, full member intel, tier filters. No signup — just scan and start.</p>
+    <div style="display:flex; flex-direction:column; align-items:center; gap:0;">
+      <!-- QR Code -->
+      <div style="background:var(--navy); border-radius:20px; padding:32px 40px 28px; display:inline-flex; flex-direction:column; align-items:center; gap:16px; box-shadow:0 20px 60px rgba(15,28,46,0.18); border:1px solid rgba(201,168,76,0.2); margin-bottom:28px;">
+        <div style="font-size:10px; font-weight:700; letter-spacing:3px; text-transform:uppercase; color:var(--gold); opacity:0.8;">Scan to Try Live</div>
+        <img
+          src="https://chart.googleapis.com/chart?chs=300x300&cht=qr&chl=https%3A%2F%2Fknown-demo-chi.vercel.app&choe=UTF-8&chf=bg,s,FFFFFF&chco=0F1C2E"
+          alt="Scan to try KNOWN live on your phone"
+          width="200" height="200"
+          style="background:#fff; border-radius:12px; display:block; border:3px solid rgba(201,168,76,0.4);">
+        <div style="text-align:center;">
+          <div style="font-size:13px; color:rgba(255,255,255,0.6); font-weight:400;">Oakland Hills CC Demo</div>
+          <div style="font-size:11px; color:rgba(255,255,255,0.25); margin-top:3px; font-family:monospace;">known-demo-chi.vercel.app</div>
+        </div>
+      </div>
+      <!-- CTA -->
+      <a href="https://known-demo-chi.vercel.app" target="_blank" class="btn-primary" style="font-size:16px; padding:16px 48px; margin-bottom:12px; display:inline-block; box-shadow:0 4px 20px rgba(201,168,76,0.3);">Launch Demo in Browser →</a>
+      <p style="font-size:12px; color:var(--muted); opacity:0.65; margin-top:4px;">40 members · Multiple choice &amp; recall modes · Full member intel · No login required</p>
+    </div>
   </div>
 </section>
 
