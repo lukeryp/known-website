@@ -1,22 +1,19 @@
 // api/events.js — Vercel serverless function
-// Scrapes ForeTees wellness/instruction events for Known (known.golf/interlachen)
-//
-// Required environment variables (set in Vercel dashboard):
-//   FORETEES_USERNAME — e.g. proshop1
-//   FORETEES_PASSWORD — e.g. ICC2026!
+// Scrapes ForeTees instruction events for Known (known.golf/interlachen)
 //
 // GET /api/events          → returns scraped events as JSON
-// GET /api/events?debug=1  → returns raw HTML/cookies at each step for debugging
+// GET /api/events?debug=1  → returns step-by-step debug info
 
-const BASE = 'https://www1.foretees.com';
-const WELLNESS_PATH = '/v5/assets/legacy/proshop_welns2.htm';
-const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36';
+const BASE   = 'https://www1.foretees.com';
+const CLUB   = 'interlachen';
+const ZIP    = '55436';
+const UA     = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36';
 
-// Extract Set-Cookie header values into a single cookie string
+// ── Cookie helpers ────────────────────────────────────────────────────────────
+
 function getCookieString(headers) {
   let arr = [];
   try {
-    // Node 18+ fetch: headers.getSetCookie() returns array
     if (typeof headers.getSetCookie === 'function') {
       arr = headers.getSetCookie();
     } else {
@@ -36,6 +33,8 @@ function mergeCookies(...parts) {
   return Array.from(map.entries()).map(([k, v]) => `${k}=${v}`).join('; ');
 }
 
+// ── HTML helpers ──────────────────────────────────────────────────────────────
+
 function stripHtml(s) {
   return (s || '')
     .replace(/<[^>]+>/g, ' ')
@@ -49,110 +48,91 @@ function stripHtml(s) {
     .trim();
 }
 
-// Parse wellness page HTML to extract instruction-related events
-function parseWellnessEvents(html) {
-  const events = [];
-  const instructionRx = /lesson|clinic|camp|junior|group|instruction|program|academy|short game|putting|swing|fitness|wellness|yoga|pilates|stretch|golf school|ladies|beginner/i;
+// ── Parse Proshop_events page ─────────────────────────────────────────────────
+//
+// The events page has a table with columns:
+//   Event Name | Display Name | Tees | Date | Start Time | End Time | Gender | ID | Tools | Pin/Unpin
+//
+// Each event name cell contains a <form action="Proshop_events"> with hidden inputs
+// for `name` and `event_id`.  We use those for reliable extraction.
 
-  // Remove scripts and styles
+function parseEventsPage(html) {
+  const instructionRx = /lesson|clinic|camp|junior|group|instruction|program|academy|short game|putting|swing|fitness|wellness|yoga|pilates|stretch|golf school|ladies|beginner|future stars|seminar|build a|workshop|fundamentals|improvement/i;
+
+  // Remove scripts/styles to avoid false matches
   const clean = html
     .replace(/<script[\s\S]*?<\/script>/gi, '')
     .replace(/<style[\s\S]*?<\/style>/gi, '');
 
-  let eventId = 0;
+  const events = [];
+  const seenIds = new Set();
 
-  // --- Strategy 1: parse <table> blocks ---
-  const tableRx = /<table[^>]*>([\s\S]*?)<\/table>/gi;
-  let tableMatch;
-  while ((tableMatch = tableRx.exec(clean)) !== null) {
-    const tableHtml = tableMatch[1];
-    const rowRx = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
-    let rowMatch;
-    const rows = [];
+  // Find every <tr> that contains a Proshop_events form (event data rows)
+  const rowRx = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+  let rowMatch;
 
-    while ((rowMatch = rowRx.exec(tableHtml)) !== null) {
-      const cellRx = /<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi;
-      let cellMatch;
-      const cells = [];
-      while ((cellMatch = cellRx.exec(rowMatch[1])) !== null) {
-        cells.push(stripHtml(cellMatch[1]));
-      }
-      if (cells.some(c => c.length > 1)) rows.push(cells);
+  while ((rowMatch = rowRx.exec(clean)) !== null) {
+    const rowHtml = rowMatch[1];
+
+    // Only rows that contain the Proshop_events form
+    if (!rowHtml.includes('action="Proshop_events"') && !rowHtml.includes("action='Proshop_events'")) continue;
+
+    // Extract event name from hidden input
+    const nameM = rowHtml.match(/name=["']name["']\s+value=["']([^"']+)["']/i)
+                || rowHtml.match(/value=["']([^"']+)["']\s+name=["']name["']/i);
+    if (!nameM) continue;
+    const evName = nameM[1].trim();
+
+    // Extract event_id from hidden input
+    const idM = rowHtml.match(/name=["']event_id["']\s+value=["'](\d+)["']/i)
+              || rowHtml.match(/value=["'](\d+)["']\s+name=["']event_id["']/i);
+    if (!idM) continue;
+    const evId = idM[1];
+
+    // Skip duplicates (each row has multiple forms for Edit/Delete)
+    if (seenIds.has(evId)) continue;
+    seenIds.add(evId);
+
+    // Filter: only instruction/wellness/clinic events
+    if (!instructionRx.test(evName)) continue;
+
+    // Extract cells from the row (for date, time, gender)
+    const cellRx = /<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi;
+    const cells = [];
+    let cellMatch;
+    while ((cellMatch = cellRx.exec(rowHtml)) !== null) {
+      cells.push(stripHtml(cellMatch[1]));
     }
 
-    if (rows.length < 1) continue;
+    // Column mapping (0-indexed, preserving empty cells):
+    //  0 = Event Name (form cell)
+    //  1 = Display Name
+    //  2 = Tees
+    //  3 = Date  (or "Season Long")
+    //  4 = Start Time
+    //  5 = End Time
+    //  6 = Gender
+    //  7 = ID
+    const date      = cells[3] || '';
+    const startTime = cells[4] || '';
+    const endTime   = cells[5] || '';
+    const gender    = cells[6] || '';
 
-    // Check if this table contains instruction-related content at all
-    const tableText = rows.map(r => r.join(' ')).join(' ');
-    if (!instructionRx.test(tableText)) continue;
-
-    for (let i = 0; i < rows.length; i++) {
-      const rowText = rows[i].join(' ');
-      // Identify event header rows: contain instruction keywords, have reasonable name length
-      if (instructionRx.test(rowText) && rows[i][0]?.length > 3 && rows[i][0]?.length < 120) {
-        const event = {
-          id: 'ft_' + (++eventId),
-          name: rows[i][0],
-          date: rows[i][1] || '',
-          time: rows[i][2] || '',
-          instructor: rows[i][3] || rows[i][2] || '',
-          slots: rows[i][4] || rows[i][3] || '',
-          members: []
-        };
-
-        // Scan subsequent rows for member names until next event-like row
-        for (let j = i + 1; j < rows.length && j < i + 100; j++) {
-          const r = rows[j];
-          const rText = r.join(' ');
-          // Stop at next event header
-          if (j > i + 1 && instructionRx.test(rText) && r[0]?.length > 3 && r[0]?.length < 120) break;
-          // Member rows: short text that looks like a name (has uppercase, reasonable length)
-          const cell0 = r[0] || '';
-          if (cell0.length >= 2 && cell0.length <= 60 && /[A-Za-z]/.test(cell0) && !/^\d+$/.test(cell0)) {
-            // Normalize "Last, First" → "First Last"
-            const parts = cell0.split(',');
-            const memberName = parts.length === 2
-              ? parts[1].trim() + ' ' + parts[0].trim()
-              : cell0.trim();
-            const memberNumber = r[1] || r[2] || '';
-            event.members.push({ name: memberName, memberNumber: memberNumber.replace(/\D/g, '') });
-          }
-        }
-
-        events.push(event);
-      }
-    }
+    events.push({
+      id:      'ft_' + evId,
+      name:    evName,
+      date:    date === 'N/A' ? '' : date,
+      time:    startTime === 'N/A' ? '' : startTime,
+      endTime: endTime  === 'N/A' ? '' : endTime,
+      gender:  gender   === 'N/A' ? '' : gender,
+      members: []
+    });
   }
 
-  // --- Strategy 2: look for bold/heading keywords (non-table pages) ---
-  if (events.length === 0) {
-    const boldRx = /<(?:b|strong|h[2-5])[^>]*>([\s\S]*?)<\/(?:b|strong|h[2-5])>/gi;
-    let boldMatch;
-    while ((boldMatch = boldRx.exec(clean)) !== null) {
-      const text = stripHtml(boldMatch[1]);
-      if (instructionRx.test(text) && text.length >= 5 && text.length <= 120) {
-        events.push({
-          id: 'ft_' + (++eventId),
-          name: text,
-          date: '',
-          time: '',
-          instructor: '',
-          slots: '',
-          members: []
-        });
-      }
-    }
-  }
-
-  // Deduplicate by name
-  const seen = new Set();
-  return events.filter(ev => {
-    const key = ev.name.toLowerCase().trim();
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
+  return events;
 }
+
+// ── Main handler ──────────────────────────────────────────────────────────────
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -160,130 +140,144 @@ module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  const debug = req.query?.debug === '1';
-  const username = "proshop1";
-  const password = "ICC2026!";
-
-  if (!username || !password) {
-    return res.status(500).json({
-      error: 'FORETEES_USERNAME and FORETEES_PASSWORD environment variables are not set in Vercel dashboard'
-    });
-  }
+  const debug    = req.query?.debug === '1';
+  const username = 'proshop1';
+  const password = 'ICC2026!';
 
   try {
-    // ── Step 1: GET the login page ──────────────────────────────────────────
-    const indexRes = await fetch(`${BASE}/v5/`, {
-      redirect: 'follow',
-      headers: { 'User-Agent': UA, 'Accept': 'text/html,application/xhtml+xml' }
-    });
-    const indexHtml = await indexRes.text();
-    const c1 = getCookieString(indexRes.headers);
+    // ── Step 1: GET the Interlachen login page to capture initial cookies ─────
+    //
+    // /interlachen/ → 302 → /v5/servlet/LoginPrompt?cn=interlachen
+    // The LoginPrompt page returns the login form HTML (5 KB).
+    // We read the form to confirm field names; we also capture any cookies set.
+    //
+    const loginPageRes = await fetch(
+      `${BASE}/v5/servlet/LoginPrompt?cn=${CLUB}`,
+      {
+        redirect: 'follow',
+        headers: { 'User-Agent': UA, 'Accept': 'text/html,application/xhtml+xml' }
+      }
+    );
+    const loginPageHtml = await loginPageRes.text();
+    const c1 = getCookieString(loginPageRes.headers);
 
     if (debug) {
       return res.json({
         stage: 'login_page',
-        finalUrl: indexRes.url,
-        status: indexRes.status,
-        cookies: c1,
-        htmlPreview: indexHtml.substring(0, 3000)
+        finalUrl: loginPageRes.url,
+        status:   loginPageRes.status,
+        cookies:  c1 || '(none)',
+        hasForm:  loginPageHtml.includes('action="/v5/servlet/Login"'),
+        formFields: (loginPageHtml.match(/<input[^>]+>/gi) || [])
+          .map(t => t.replace(/\s+/g,' ').substring(0, 120))
       });
     }
 
-    // ── Step 2: Discover login form action ──────────────────────────────────
-    // Prefer forms that look like login forms
-    const formMatch = indexHtml.match(/<form[^>]+action=["']([^"']+)["'][^>]*>[\s\S]*?(?:username|user|login)/i) ||
-                      indexHtml.match(/<form[^>]+action=["']([^"']+)["']/i);
-    let loginUrl = `${BASE}/v5/login`;
-    if (formMatch) {
-      const raw = formMatch[1];
-      loginUrl = raw.startsWith('http') ? raw : new URL(raw, indexRes.url).href;
-    }
+    // ── Step 2: POST credentials ──────────────────────────────────────────────
+    //
+    // Form fields discovered from LoginPrompt HTML:
+    //   user_name          — username text field
+    //   password           — password field
+    //   clubname           — hidden, value = "interlachen"
+    //   store_rwd_cookie   — hidden, value = "1"
+    //   zipcode            — hidden, value = "55436"
+    //   s_m                — hidden, value = "24"
+    //
+    const loginBody = new URLSearchParams({
+      user_name:        username,
+      password:         password,
+      clubname:         CLUB,
+      store_rwd_cookie: '1',
+      zipcode:          ZIP,
+      s_m:              '24'
+    });
 
-    // Collect hidden fields (CSRF tokens, etc.)
-    const body = new URLSearchParams({ username, password });
-    const hiddenRx = /<input[^>]+type=["']hidden["'][^>]*>/gi;
-    let hiddenMatch;
-    while ((hiddenMatch = hiddenRx.exec(indexHtml)) !== null) {
-      const nameM = hiddenMatch[0].match(/name=["']([^"']+)["']/i);
-      const valM  = hiddenMatch[0].match(/value=["']([^"']*)["']/i);
-      if (nameM && valM) body.set(nameM[1], valM[1]);
-    }
-
-    // ── Step 3: POST credentials ────────────────────────────────────────────
-    const loginRes = await fetch(loginUrl, {
-      method: 'POST',
+    const loginRes = await fetch(`${BASE}/v5/servlet/Login`, {
+      method:   'POST',
       redirect: 'follow',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        'User-Agent': UA,
-        'Referer': indexRes.url,
-        'Accept': 'text/html,application/xhtml+xml',
-        'Cookie': c1
+        'User-Agent':   UA,
+        'Referer':      `${BASE}/v5/servlet/LoginPrompt?cn=${CLUB}`,
+        'Origin':       BASE,
+        'Accept':       'text/html,application/xhtml+xml',
+        'Cookie':       c1
       },
-      body: body.toString()
+      body: loginBody.toString()
     });
+
     const loginHtml = await loginRes.text();
-    const c2 = getCookieString(loginRes.headers);
-    const allCookies = mergeCookies(c1, c2);
+    const c2        = getCookieString(loginRes.headers);
+    const cookies   = mergeCookies(c1, c2);
 
     // Detect login failure
     const loginFailed =
-      /invalid.*(user|pass|cred)|incorrect.*(user|pass)|login.*failed|authentication.*failed/i.test(loginHtml.substring(0, 1000)) &&
-      !/dashboard|proshop|welcome|tee.?sheet/i.test(loginHtml);
+      /username or password not provided|invalid.*login|login.*failed|authentication.*failed/i
+        .test(loginHtml.substring(0, 1000));
 
-    if (loginFailed) {
+    if (debug) {
+      return res.json({
+        stage:         'post_login',
+        loginUrl:      loginRes.url,
+        status:        loginRes.status,
+        cookies:       cookies || '(none)',
+        hasSession:    cookies.includes('JSESSIONID'),
+        loginFailed,
+        htmlPreview:   loginHtml.substring(0, 400)
+      });
+    }
+
+    if (loginFailed || !cookies.includes('JSESSIONID')) {
       return res.status(401).json({
-        error: 'ForeTees login failed — verify FORETEES_USERNAME and FORETEES_PASSWORD',
-        loginUrlUsed: loginUrl,
+        error:       'ForeTees login failed — check credentials',
+        hasSession:  cookies.includes('JSESSIONID'),
         htmlPreview: loginHtml.substring(0, 400)
       });
     }
 
-    // ── Step 4: Fetch wellness page ─────────────────────────────────────────
-    const wellnessRes = await fetch(`${BASE}${WELLNESS_PATH}`, {
+    // ── Step 3: Fetch the events page ─────────────────────────────────────────
+    const eventsRes = await fetch(`${BASE}/v5/servlet/Proshop_events`, {
       redirect: 'follow',
       headers: {
         'User-Agent': UA,
-        'Referer': loginRes.url,
-        'Accept': 'text/html,application/xhtml+xml',
-        'Cookie': allCookies
+        'Referer':    `${BASE}/v5/servlet/Proshop_announce`,
+        'Accept':     'text/html,application/xhtml+xml',
+        'Cookie':     cookies
       }
     });
 
-    if (!wellnessRes.ok) {
-      return res.status(wellnessRes.status).json({
-        error: `Wellness page returned HTTP ${wellnessRes.status}`,
-        url: wellnessRes.url,
-        hint: 'Session may not have the right permissions for this page'
+    if (!eventsRes.ok) {
+      return res.status(eventsRes.status).json({
+        error: `Events page returned HTTP ${eventsRes.status}`,
+        url:   eventsRes.url
       });
     }
 
-    const wellnessHtml = await wellnessRes.text();
+    const eventsHtml = await eventsRes.text();
 
     if (debug) {
       return res.json({
-        stage: 'wellness_page',
-        url: wellnessRes.url,
-        status: wellnessRes.status,
-        htmlLength: wellnessHtml.length,
-        htmlPreview: wellnessHtml.substring(0, 4000),
-        cookies: allCookies.substring(0, 300)
+        stage:       'events_page',
+        url:         eventsRes.url,
+        status:      eventsRes.status,
+        htmlLength:  eventsHtml.length,
+        htmlPreview: eventsHtml.substring(0, 2000)
       });
     }
 
-    const events = parseWellnessEvents(wellnessHtml);
+    const events = parseEventsPage(eventsHtml);
 
     return res.json({
       events,
       lastSync: new Date().toISOString(),
       meta: {
         eventCount: events.length,
-        htmlLength: wellnessHtml.length,
-        wellnessUrl: wellnessRes.url
+        htmlLength: eventsHtml.length,
+        eventsUrl:  eventsRes.url
       }
     });
 
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: err.message, stack: err.stack });
   }
 };
