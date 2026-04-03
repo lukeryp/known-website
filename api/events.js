@@ -161,8 +161,8 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   const debug = req.query?.debug === '1';
-  const username = process.env.FORETEES_USERNAME;
-  const password = process.env.FORETEES_PASSWORD;
+  const username = "proshop1";
+  const password = "ICC2026!";
 
   if (!username || !password) {
     return res.status(500).json({
