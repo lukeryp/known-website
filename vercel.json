@@ -2,5 +2,8 @@
   "cleanUrls": true,
   "routes": [
     { "src": "/forge", "dest": "/forge.html" }
-  ]
+  ],
+  "functions": {
+    "api/events.js": { "maxDuration": 15 }
+  }
 }

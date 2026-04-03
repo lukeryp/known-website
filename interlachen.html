@@ -383,6 +383,23 @@
     .mgr-tier-acc-chip { flex: 1; background: rgba(255,255,255,0.04); border-radius: 8px; padding: 8px 4px; text-align: center; }
     .mgr-tier-acc-chip .val { font-size: 1.1em; font-weight: 700; }
     .mgr-tier-acc-chip .lbl { font-size: 9px; color: var(--gray-400); margin-top: 2px; }
+    /* ForeTees Events section */
+    .mgr-sync-btn { padding: 6px 14px; font-size: 11px; font-weight: 600; background: rgba(0,175,81,0.12); border: 1px solid rgba(0,175,81,0.3); border-radius: 6px; color: #00af51; cursor: pointer; transition: background 0.2s; }
+    .mgr-sync-btn:hover { background: rgba(0,175,81,0.22); }
+    .mgr-sync-btn:disabled { opacity: 0.5; cursor: default; }
+    .mgr-sync-status { font-size: 10px; color: var(--gray-400); }
+    .mgr-event-card { background: rgba(0,175,81,0.05); border: 1px solid rgba(0,175,81,0.16); border-radius: 14px; padding: 14px; margin-bottom: 8px; }
+    .mgr-event-name { font-family: Raleway, sans-serif; font-size: 0.9em; font-weight: 700; color: #00af51; margin-bottom: 3px; }
+    .mgr-event-meta { font-size: 10px; color: var(--gray-400); margin-bottom: 10px; }
+    .mgr-event-assign-row { display: flex; gap: 8px; align-items: center; }
+    .mgr-assign-select { flex: 1; padding: 6px 8px; font-size: 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #fff; cursor: pointer; }
+    .mgr-assign-btn { padding: 6px 14px; font-size: 12px; font-weight: 600; background: rgba(0,175,81,0.12); border: 1px solid rgba(0,175,81,0.3); border-radius: 8px; color: #00af51; cursor: pointer; white-space: nowrap; }
+    .mgr-assign-btn:hover { background: rgba(0,175,81,0.22); }
+    .mgr-assigned-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+    .mgr-assigned-chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px 3px 10px; background: rgba(0,175,81,0.1); border: 1px solid rgba(0,175,81,0.22); border-radius: 12px; font-size: 10px; color: #00af51; }
+    .mgr-assigned-chip button { background: none; border: none; color: inherit; cursor: pointer; font-size: 13px; line-height: 1; padding: 0; opacity: 0.6; }
+    .mgr-assigned-chip button:hover { opacity: 1; }
+    .mgr-no-events { color: rgba(255,255,255,0.3); font-size: 0.82em; font-style: italic; text-align: center; padding: 16px 0; }
 
 /* Production Mode */
 .production-card{text-align:center;padding:20px 16px}
@@ -1775,6 +1792,36 @@ let productionTimeout = null;
     nextQuestion();
   };
 
+  // Load ForeTees event lists assigned to current profile
+  (function loadFtEventLists() {
+    const profileKey = getCurrentProfile().replace(/\s+/g, '_');
+    const assignedIds = JSON.parse(localStorage.getItem('icc_ft_assign_' + profileKey) || '[]');
+    if (!assignedIds.length) return;
+    const events = JSON.parse(localStorage.getItem('icc_ft_events') || '[]');
+    assignedIds.forEach(id => {
+      const ev = events.find(e => e.id === id);
+      if (!ev) return;
+      // Resolve enrolled member names to GOLFERS indices
+      const ids = [];
+      (ev.members || []).forEach(m => {
+        const nameRaw = (m.name || '').trim();
+        if (!nameRaw) return;
+        const nameLower = nameRaw.toLowerCase();
+        const idx = GOLFERS.findIndex(g => {
+          if (m.memberNumber && g.memberNumber && m.memberNumber === g.memberNumber) return true;
+          const full1 = (g.name || '').toLowerCase();           // "Last, First"
+          const full2 = ((g.first || '') + ' ' + (g.last || '')).toLowerCase(); // "First Last"
+          return full1 === nameLower || full2 === nameLower ||
+                 g.last?.toLowerCase() === nameLower.split(',')[0]?.trim();
+        });
+        if (idx >= 0 && !ids.includes(idx)) ids.push(idx);
+      });
+      // Parse date from event (fallback to far future so it shows as "ok")
+      const due = ev.date ? ev.date.replace(/[^\d-]/g, '-').substring(0, 10) || '2026-12-31' : '2026-12-31';
+      LISTS.push({ name: '\u26F3 ' + ev.name, ids, due, source: 'foretees', eventId: id });
+    });
+  })();
+
   renderLists();
 
   // ===== STAFF TAB =====
@@ -2705,6 +2752,89 @@ function showProductionFallback(idx) {
       return { mastered, masteryPct, accPct, tierMastered, tierTotal, lastActive, totalAnswered };
     }
 
+    // ── ForeTees event helpers ──────────────────────────────────────────────
+    const FT_EVENTS_KEY  = 'icc_ft_events';
+    const FT_SYNC_KEY    = 'icc_ft_lastSync';
+    const FT_ASSIGN_PFX  = 'icc_ft_assign_';
+
+    function getFtEvents() { return JSON.parse(localStorage.getItem(FT_EVENTS_KEY) || '[]'); }
+    function saveFtEvents(evs) { localStorage.setItem(FT_EVENTS_KEY, JSON.stringify(evs)); }
+    function getFtAssign(key) { return JSON.parse(localStorage.getItem(FT_ASSIGN_PFX + key) || '[]'); }
+    function setFtAssign(key, ids) { localStorage.setItem(FT_ASSIGN_PFX + key, JSON.stringify(ids)); }
+
+    window.syncForteesEvents = async function(btn) {
+      if (btn) { btn.disabled = true; btn.textContent = 'Syncing…'; }
+      try {
+        const res = await fetch('/api/events');
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        saveFtEvents(data.events || []);
+        localStorage.setItem(FT_SYNC_KEY, new Date().toISOString());
+        renderMgrDashboard();
+      } catch (e) {
+        alert('Sync failed: ' + e.message);
+        if (btn) { btn.disabled = false; btn.textContent = 'Sync Events'; }
+      }
+    };
+
+    window.assignFromSelect = function(selectId, eventId) {
+      const sel = document.getElementById(selectId);
+      if (!sel || !sel.value) return;
+      const key = sel.value.replace(/\s+/g, '_');
+      const current = getFtAssign(key);
+      if (!current.includes(eventId)) setFtAssign(key, [...current, eventId]);
+      sel.value = '';
+      renderMgrDashboard();
+    };
+
+    window.unassignFtEvent = function(eventId, key) {
+      setFtAssign(key, getFtAssign(key).filter(id => id !== eventId));
+      renderMgrDashboard();
+    };
+
+    function buildEventSectionHTML(profiles) {
+      const events = getFtEvents();
+      const lastSync = localStorage.getItem(FT_SYNC_KEY);
+      const syncLabel = lastSync
+        ? 'Last sync: ' + new Date(lastSync).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+        : 'Never synced';
+
+      return `
+        <div class="mgr-section-title" style="display:flex;justify-content:space-between;align-items:center">
+          <span>ForeTees Events</span>
+          <button class="mgr-sync-btn" onclick="syncForteesEvents(this)">Sync Events</button>
+        </div>
+        <div style="margin-bottom:10px">
+          <div class="mgr-sync-status">${syncLabel}${events.length ? ' · ' + events.length + ' events' : ''}</div>
+        </div>
+        ${events.length === 0 ? `<div class="mgr-no-events">No events loaded yet. Click "Sync Events" to pull instruction events from ForeTees.</div>` : ''}
+        ${events.map(ev => {
+          const assignedStaff = profiles.filter(p => getFtAssign(p.replace(/\s+/g,'_')).includes(ev.id));
+          const metaParts = [ev.date, ev.time, ev.instructor, ev.members?.length ? ev.members.length + ' enrolled' : (ev.slots || '')].filter(Boolean);
+          const selId = 'ft-sel-' + ev.id;
+          return `
+          <div class="mgr-event-card">
+            <div class="mgr-event-name">${ev.name}</div>
+            ${metaParts.length ? `<div class="mgr-event-meta">${metaParts.join(' · ')}</div>` : ''}
+            <div class="mgr-event-assign-row">
+              <select class="mgr-assign-select" id="${selId}">
+                <option value="">Assign to staff…</option>
+                ${profiles.map(p => `<option value="${p}">${p}</option>`).join('')}
+              </select>
+              <button class="mgr-assign-btn" onclick="assignFromSelect('${selId}','${ev.id}')">Assign</button>
+            </div>
+            ${assignedStaff.length ? `
+              <div class="mgr-assigned-chips">
+                ${assignedStaff.map(p => {
+                  const k = p.replace(/\s+/g,'_');
+                  return `<span class="mgr-assigned-chip">${p}<button onclick="unassignFtEvent('${ev.id}','${k}')" title="Remove">×</button></span>`;
+                }).join('')}
+              </div>` : ''}
+          </div>`;
+        }).join('')}
+      `;
+    }
+
     function renderMgrDashboard() {
       const profiles = getProfiles().filter(p => p !== 'Guest');
       const allStats = profiles.map(p => ({ name: p, ...getProfileStats(p) }));
@@ -2746,6 +2876,7 @@ function showProductionFallback(idx) {
             <div class="mgr-last-active">${s.totalAnswered} answers total${s.lastActive ? ' · Last active ' + s.lastActive : ''}</div>`}
           </div>`).join('')}
         ${profiles.length === 0 ? '<div class="mgr-no-data" style="text-align:center;padding:32px">No staff profiles found.<br>Staff must select their name from the dropdown to appear here.</div>' : ''}
+        ${buildEventSectionHTML(profiles)}
         ${buildAnalyticsHTML(profiles)}
       `;
     }
