@@ -517,6 +517,24 @@
     .mgr-assigned-chip button { background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 15px; line-height: 1; padding: 0 0 0 2px; transition: color 0.15s; }
     .mgr-assigned-chip button:hover { color: var(--red); }
     .mgr-no-events { color: var(--text-secondary); font-size: 13px; text-align: center; padding: 28px 0; line-height: 1.6; }
+    /* ===== ASSIGNMENT TARGETS ===== */
+    .mgr-assign-form { display: flex; flex-direction: column; gap: 8px; }
+    .mgr-assign-meta-row { display: flex; gap: 8px; align-items: center; }
+    .mgr-grade-select { padding: 8px 10px; font-size: 12px; background: rgba(0,0,0,0.04); border: 1px solid var(--border); border-radius: 10px; color: var(--text-primary); cursor: pointer; font-family: inherit; outline: none; -webkit-appearance: none; appearance: none; width: 76px; flex-shrink: 0; }
+    .mgr-due-input { flex: 1; padding: 8px 10px; font-size: 12px; background: rgba(0,0,0,0.04); border: 1px solid var(--border); border-radius: 10px; color: var(--text-primary); font-family: inherit; outline: none; min-width: 0; }
+    .mgr-due-input:focus, .mgr-grade-select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,113,227,0.12); }
+    .chip-grade { font-size: 11px; font-weight: 700; color: #00af51; margin-left: 3px; }
+    .chip-due { font-size: 11px; color: var(--text-secondary); margin-left: 2px; }
+    .asgn-target-bar { margin-top: 10px; padding: 10px 12px; background: rgba(0,0,0,0.03); border: 1px solid var(--border); border-radius: 12px; }
+    .asgn-target-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; gap: 8px; flex-wrap: wrap; }
+    .asgn-grade-badge { font-size: 12px; font-weight: 700; color: #00af51; background: rgba(0,175,81,0.1); padding: 3px 9px; border-radius: 20px; white-space: nowrap; border: 1px solid rgba(0,175,81,0.25); }
+    .asgn-due-label { font-size: 12px; color: var(--text-secondary); white-space: nowrap; }
+    .asgn-due-label.overdue { color: var(--red); font-weight: 600; }
+    .asgn-progress-track { height: 6px; background: rgba(0,0,0,0.08); border-radius: 3px; overflow: visible; position: relative; }
+    .asgn-progress-fill { height: 100%; border-radius: 3px; transition: width 0.4s ease; position: absolute; top: 0; left: 0; }
+    .asgn-target-tick { position: absolute; top: -3px; width: 2px; height: 12px; background: rgba(0,0,0,0.3); border-radius: 1px; transform: translateX(-50%); pointer-events: none; }
+    .asgn-score-row { display: flex; justify-content: space-between; margin-top: 5px; font-size: 11px; color: var(--text-secondary); }
+    .asgn-overdue-badge { display: inline-flex; align-items: center; gap: 4px; background: rgba(255,59,48,0.1); color: var(--red); font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 20px; border: 1px solid rgba(255,59,48,0.2); margin-top: 6px; }
 
     /* ===== PRODUCTION MODE CARD ===== */
     .production-card { text-align: center; padding: 22px 18px; }
@@ -922,6 +940,7 @@
   function tierLabel(t) { return ['','Must Know','Regular','Occasional','Infrequent'][t]; }
   function tierColor(t) { return ['','var(--tier1)','var(--tier2)','var(--tier3)','var(--tier4)'][t]; }
   function parseFtDate(d){if(!d)return "2026-12-31";var p=d.split("/");return p.length===3?p[2]+"-"+p[0].padStart(2,"0")+"-"+p[1].padStart(2,"0"):d;}
+  const GRADE_THRESHOLDS = { 'A+': 97, 'A': 93, 'B+': 87, 'B': 83, 'C+': 77, 'C': 73 };
   function daysUntil(dateStr) {
     const d = new Date(dateStr + 'T00:00:00');
     const now = new Date(); now.setHours(0,0,0,0);
@@ -2051,21 +2070,56 @@ let productionTimeout = null;
     let html = '';
 
     if (assignedLists.length) {
+      const scores = JSON.parse(localStorage.getItem('icc_scores_' + profileKey) || '{"mcCorrect":0,"mcTotal":0}');
+      const accPct = scores.mcTotal ? Math.round(scores.mcCorrect / scores.mcTotal * 100) : null;
       html += `<div class="assigned-events-section">
         <div class="assigned-events-title">Assigned Events</div>
         ${assignedLists.map(({ l: list, i: li }) => {
           const hasDate = list.due && list.due !== '2026-12-31';
           const dateStr = hasDate ? new Date(list.due + 'T12:00:00').toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) : '';
-          return `<div class="assigned-event-card">
-            <div class="assigned-event-info">
-              <div class="assigned-event-name">${list.name}</div>
-              ${dateStr ? `<div class="assigned-event-date">${dateStr}</div>` : ''}
-              <div class="assigned-event-meta">${list.ids.length > 0 ? list.ids.length + ' members enrolled' : 'Members TBD'}</div>
+          const gt = list.grade_target;
+          const dd = list.due_date;
+          const threshold = gt ? (GRADE_THRESHOLDS[gt] || 0) : 0;
+          const current = accPct !== null ? accPct : 0;
+          const daysLeft = dd ? Math.round((new Date(dd + 'T00:00:00') - new Date()) / 86400000) : null;
+          const isOverdue = daysLeft !== null && daysLeft < 0;
+          const targetMet = threshold > 0 && current >= threshold;
+          let targetBarHTML = '';
+          if (gt || dd) {
+            const fillPct = threshold > 0 ? Math.min(100, Math.round(current / threshold * 100)) : 0;
+            const tickPct = threshold > 0 ? 100 : 0;
+            const fillColor = isOverdue && !targetMet ? 'var(--red)' : targetMet ? '#00af51' : '#f4ee19';
+            const dueLabel = daysLeft === null ? '' : isOverdue ? `${Math.abs(daysLeft)}d overdue` : daysLeft === 0 ? 'Due today' : `${daysLeft}d left`;
+            const dueCls = isOverdue ? 'overdue' : '';
+            targetBarHTML = `<div class="asgn-target-bar">
+              <div class="asgn-target-row">
+                ${gt ? `<span class="asgn-grade-badge">Target: ${gt} · ${threshold}%+</span>` : ''}
+                ${dueLabel ? `<span class="asgn-due-label ${dueCls}">${dueLabel}</span>` : ''}
+              </div>
+              ${gt ? `<div class="asgn-progress-track" style="height:6px">
+                <div class="asgn-progress-fill" style="width:${fillPct}%;background:${fillColor}"></div>
+                <div class="asgn-target-tick" style="left:${tickPct}%"></div>
+              </div>
+              <div class="asgn-score-row">
+                <span class="current">${accPct !== null ? accPct + '% accuracy' : 'No quiz data yet'}</span>
+                <span>${targetMet ? '✓ Met' : threshold + '% needed'}</span>
+              </div>` : ''}
+              ${isOverdue && !targetMet ? `<div class="asgn-overdue-badge">⚠ Overdue — grade not yet met</div>` : ''}
+            </div>`;
+          }
+          return `<div class="assigned-event-card" style="flex-direction:column;align-items:stretch">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+              <div class="assigned-event-info">
+                <div class="assigned-event-name">${list.name}</div>
+                ${dateStr ? `<div class="assigned-event-date">${dateStr}</div>` : ''}
+                <div class="assigned-event-meta">${list.ids.length > 0 ? list.ids.length + ' members enrolled' : 'Members TBD'}</div>
+              </div>
+              <div class="assigned-event-actions">
+                <button class="btn-view" onclick="showListDetail(${li})">📖 Study</button>
+                <button class="btn-unassign" onclick="unassignListEvent('${list.eventId}','${profileKey}')">Remove</button>
+              </div>
             </div>
-            <div class="assigned-event-actions">
-              <button class="btn-view" onclick="showListDetail(${li})">📖 Study</button>
-              <button class="btn-unassign" onclick="unassignListEvent('${list.eventId}','${profileKey}')">Remove</button>
-            </div>
+            ${targetBarHTML}
           </div>`;
         }).join('')}
       </div>`;
@@ -2143,6 +2197,7 @@ let productionTimeout = null;
     const assignedIds = JSON.parse(localStorage.getItem('icc_ft_assign_' + profileKey) || '[]');
     if (!assignedIds.length) return;
     const events = JSON.parse(localStorage.getItem('icc_ft_events') || '[]');
+    const assignMeta = JSON.parse(localStorage.getItem('icc_ft_ameta_' + profileKey) || '{}');
     assignedIds.forEach(id => {
       const ev = events.find(e => e.id === id);
       if (!ev) return;
@@ -2163,7 +2218,9 @@ let productionTimeout = null;
       });
       // Parse date from event (fallback to far future so it shows as "ok")
       const due = parseFtDate(ev.date);
-      LISTS.unshift({ name: '\u26F3 ' + ev.name, ids, due, source: 'foretees', eventId: id });
+      const m = assignMeta[id] || {};
+      LISTS.unshift({ name: '\u26F3 ' + ev.name, ids, due, source: 'foretees', eventId: id,
+        grade_target: m.grade_target || '', due_date: m.due_date || '' });
     });
   }
   loadFtEventLists();
@@ -3118,6 +3175,9 @@ function showProductionFallback(idx) {
     function saveFtEvents(evs) { localStorage.setItem(FT_EVENTS_KEY, JSON.stringify(evs)); }
     function getFtAssign(key) { return JSON.parse(localStorage.getItem(FT_ASSIGN_PFX + key) || '[]'); }
     function setFtAssign(key, ids) { localStorage.setItem(FT_ASSIGN_PFX + key, JSON.stringify(ids)); }
+    const FT_AMETA_PFX = 'icc_ft_ameta_';
+    function getFtAssignMeta(key) { return JSON.parse(localStorage.getItem(FT_AMETA_PFX + key) || '{}'); }
+    function setFtAssignMeta(key, meta) { localStorage.setItem(FT_AMETA_PFX + key, JSON.stringify(meta)); }
 
     window.syncForteesEvents = async function(btn) {
       if (btn) { btn.disabled = true; btn.textContent = 'Syncing…'; }
@@ -3140,8 +3200,17 @@ function showProductionFallback(idx) {
       const staffName = sel.value;
       const key = staffName.replace(/\s+/g, '_');
       const current = getFtAssign(key);
+      const gradeSel = document.getElementById(selectId + '-grade');
+      const dueInput = document.getElementById(selectId + '-due');
+      const grade_target = gradeSel ? gradeSel.value : '';
+      const due_date = dueInput ? dueInput.value : '';
       if (!current.includes(eventId)) {
         setFtAssign(key, [...current, eventId]);
+        if (grade_target || due_date) {
+          const meta = getFtAssignMeta(key);
+          meta[eventId] = { grade_target, due_date };
+          setFtAssignMeta(key, meta);
+        }
         const ev = getFtEvents().find(e => e.id === eventId);
         if (typeof addNotification === 'function' && ev) {
           addNotification('New event list assigned', `${staffName} — ${ev.name}`);
@@ -3156,6 +3225,9 @@ function showProductionFallback(idx) {
 
     window.unassignFtEvent = function(eventId, key) {
       setFtAssign(key, getFtAssign(key).filter(id => id !== eventId));
+      const meta = getFtAssignMeta(key);
+      delete meta[eventId];
+      setFtAssignMeta(key, meta);
       if (window._kSync) window._kSync.assignment(eventId, key, 'unassign');
       renderMgrDashboard();
       // Refresh Lists tab so removed event disappears immediately
@@ -3183,6 +3255,25 @@ function showProductionFallback(idx) {
           const assignedStaff = profiles.filter(p => getFtAssign(p.replace(/\s+/g,'_')).includes(ev.id));
           const metaParts = [ev.date, (ev.time && ev.time !== '1:00 AM') ? ev.time : null, ev.instructor, ev.members?.length ? ev.members.length + ' enrolled' : (ev.slots || '')].filter(Boolean);
           const selId = 'ft-sel-' + ev.id;
+          const today = new Date().toISOString().split('T')[0];
+          const gradeOpts = ['A+','A','B+','B','C+','C'].map(g => `<option value="${g}">${g}</option>`).join('');
+          const assignFormHTML = (placeholder, staffList) => `
+            <div class="mgr-assign-form">
+              <div class="mgr-event-assign-row">
+                <select class="mgr-assign-select" id="${selId}">
+                  <option value="">${placeholder}</option>
+                  ${staffList.map(p => `<option value="${p}">${p}</option>`).join('')}
+                </select>
+              </div>
+              <div class="mgr-assign-meta-row">
+                <select class="mgr-grade-select" id="${selId}-grade" title="Grade target">
+                  <option value="">Grade…</option>
+                  ${gradeOpts}
+                </select>
+                <input type="date" class="mgr-due-input" id="${selId}-due" min="${today}" title="Due date">
+                <button class="mgr-assign-btn" onclick="assignFromSelect('${selId}','${ev.id}')">Assign</button>
+              </div>
+            </div>`;
           return `
           <div class="mgr-event-card">
             <div class="mgr-event-name">${ev.name}</div>
@@ -3191,26 +3282,18 @@ function showProductionFallback(idx) {
               <div class="mgr-assigned-chips">
                 ${assignedStaff.map(p => {
                   const k = p.replace(/\s+/g,'_');
-                  return `<span class="mgr-assigned-chip">${p}<button onclick="unassignFtEvent('${ev.id}','${k}')" title="Remove">×</button></span>`;
+                  const m = getFtAssignMeta(k)[ev.id] || {};
+                  const gradeChip = m.grade_target ? `<span class="chip-grade">${m.grade_target}</span>` : '';
+                  const dueChip = m.due_date ? `<span class="chip-due">· ${new Date(m.due_date + 'T12:00:00').toLocaleDateString([],{month:'short',day:'numeric'})}</span>` : '';
+                  return `<span class="mgr-assigned-chip">${p}${gradeChip}${dueChip}<button onclick="unassignFtEvent('${ev.id}','${k}')" title="Remove">×</button></span>`;
                 }).join('')}
               </div>
               <div style="margin-top:8px">
-                <button class="mgr-assign-btn" style="background:rgba(0,0,0,0.06);color:var(--text-primary);font-size:12px;padding:6px 14px" onclick="this.style.display='none';document.getElementById('${selId}-x').style.display='flex'">+ Assign another</button>
-                <div id="${selId}-x" class="mgr-event-assign-row" style="display:none">
-                  <select class="mgr-assign-select" id="${selId}">
-                    <option value="">Choose staff…</option>
-                    ${profiles.filter(p => !assignedStaff.includes(p)).map(p => `<option value="${p}">${p}</option>`).join('')}
-                  </select>
-                  <button class="mgr-assign-btn" onclick="assignFromSelect('${selId}','${ev.id}')">Assign</button>
+                <button class="mgr-assign-btn" style="background:rgba(0,0,0,0.06);color:var(--text-primary);font-size:12px;padding:6px 14px" onclick="this.style.display='none';document.getElementById('${selId}-x').style.display='block'">+ Assign another</button>
+                <div id="${selId}-x" style="display:none">
+                  ${assignFormHTML('Choose staff…', profiles.filter(p => !assignedStaff.includes(p)))}
                 </div>
-              </div>` : `
-            <div class="mgr-event-assign-row">
-              <select class="mgr-assign-select" id="${selId}">
-                <option value="">Assign to staff…</option>
-                ${profiles.map(p => `<option value="${p}">${p}</option>`).join('')}
-              </select>
-              <button class="mgr-assign-btn" onclick="assignFromSelect('${selId}','${ev.id}')">Assign</button>
-            </div>`}
+              </div>` : assignFormHTML('Assign to staff…', profiles)}
           </div>`;
         }).join('')}
         </div>
