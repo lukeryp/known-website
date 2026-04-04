@@ -3014,6 +3014,16 @@ function showProductionFallback(idx) {
                   const k = p.replace(/\s+/g,'_');
                   return `<span class="mgr-assigned-chip">${p}<button onclick="unassignFtEvent('${ev.id}','${k}')" title="Remove">×</button></span>`;
                 }).join('')}
+              </div>
+              <div style="margin-top:8px">
+                <button class="mgr-assign-btn" style="background:rgba(0,0,0,0.06);color:var(--text-primary);font-size:12px;padding:6px 14px" onclick="this.style.display='none';document.getElementById('${selId}-x').style.display='flex'">+ Assign another</button>
+                <div id="${selId}-x" class="mgr-event-assign-row" style="display:none">
+                  <select class="mgr-assign-select" id="${selId}">
+                    <option value="">Choose staff…</option>
+                    ${profiles.filter(p => !assignedStaff.includes(p)).map(p => `<option value="${p}">${p}</option>`).join('')}
+                  </select>
+                  <button class="mgr-assign-btn" onclick="assignFromSelect('${selId}','${ev.id}')">Assign</button>
+                </div>
               </div>` : `
             <div class="mgr-event-assign-row">
               <select class="mgr-assign-select" id="${selId}">
