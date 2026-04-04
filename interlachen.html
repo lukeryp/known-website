@@ -823,6 +823,7 @@
   function tierClass(t) { return 't' + t; }
   function tierLabel(t) { return ['','Must Know','Regular','Occasional','Infrequent'][t]; }
   function tierColor(t) { return ['','var(--tier1)','var(--tier2)','var(--tier3)','var(--tier4)'][t]; }
+  function parseFtDate(d){if(!d)return "2026-12-31";var p=d.split("/");return p.length===3?p[2]+"-"+p[0].padStart(2,"0")+"-"+p[1].padStart(2,"0"):d;}
   function daysUntil(dateStr) {
     const d = new Date(dateStr + 'T00:00:00');
     const now = new Date(); now.setHours(0,0,0,0);
