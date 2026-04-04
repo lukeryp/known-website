@@ -929,6 +929,7 @@ let productionTimeout = null;
     mcAccuracy = JSON.parse(localStorage.getItem(pKey('icc_mc_accuracy')) || '{}');
     updateScoresDisplay();
     updateStreakDisplay();
+    if (typeof loadFtEventLists === 'function') { loadFtEventLists(); renderLists(); }
     startSession();
   });
 
@@ -943,6 +944,7 @@ let productionTimeout = null;
     mcAccuracy = JSON.parse(localStorage.getItem(pKey('icc_mc_accuracy')) || '{}');
     updateScoresDisplay();
     updateStreakDisplay();
+    if (typeof loadFtEventLists === 'function') { loadFtEventLists(); renderLists(); }
     startSession();
   }
 
@@ -2682,7 +2684,8 @@ function showProductionFallback(idx) {
             populateProfileSelect();
             updateScoresDisplay();
             updateStreakDisplay();
-            startSession();
+            if (typeof loadFtEventLists === 'function') { loadFtEventLists(); renderLists(); }
+    startSession();
             joinScreen.classList.add('hidden');
             document.getElementById('app').classList.add('active');
           }
