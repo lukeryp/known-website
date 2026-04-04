@@ -281,8 +281,9 @@
     .mic-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
     .mic-dot.pulse { animation: micPulse 1.2s ease-in-out infinite; }
     @keyframes micPulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.4); opacity: 0.5; } }
-    .prod-heard { font-size: 13px; color: var(--text-secondary); margin: 4px 0 8px; min-height: 20px; font-style: italic; }
-    .prod-heard.active { color: var(--text-primary); }
+    .prod-heard { font-size: 13px; color: var(--text-secondary); margin: 4px 0 8px; min-height: 20px; font-style: italic; transition: color 0.2s; }
+    .prod-heard.interim { color: var(--accent); opacity: 0.85; }
+    .prod-heard.active { color: var(--text-primary); font-style: normal; opacity: 1; }
     .prod-conf-bar { width: 120px; height: 3px; background: rgba(0,0,0,0.08); border-radius: 2px; margin: 4px auto 12px; overflow: hidden; }
     .prod-conf-bar .fill { height: 100%; background: var(--green); border-radius: 2px; transition: width 0.3s; }
     .production-skip { margin-top: 10px; padding: 10px 28px; font-size: 13px; font-weight: 500; background: rgba(0,0,0,0.04); border: 1px solid transparent; border-radius: 20px; color: var(--text-secondary); cursor: pointer; font-family: inherit; }
@@ -1883,13 +1884,18 @@ let productionTimeout = null;
               bestText = t;
             }
           }
-          // Show interim text
+          // Show interim speech in real time
           if (!result.isFinal && result[0]) {
-            heardEl.textContent = '…' + result[0].transcript.trim();
+            const interim = result[0].transcript.trim();
+            if (interim) {
+              heardEl.textContent = interim;
+              heardEl.classList.add('interim');
+            }
           }
         }
         if (gotFinal) {
-          heardEl.textContent = bestText ? '"' + bestText + '"' : '';
+          heardEl.classList.remove('interim');
+          heardEl.textContent = bestText || '';
           if (bestConf > 0) {
             resolve(true, bestText, bestConf);
           }
