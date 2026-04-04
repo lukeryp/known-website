@@ -432,21 +432,6 @@
     .add-profile-input:focus { border-color: var(--accent); }
     .add-profile-btn { padding: 8px 15px; font-size: 13px; font-weight: 600; background: var(--text-primary); color: #fff; border: none; border-radius: 9px; cursor: pointer; font-family: inherit; }
 
-    /* ===== ONBOARDING ===== */
-    .onboard-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 2000; display: none; align-items: center; justify-content: center; padding: 24px; }
-    .onboard-overlay.show { display: flex; }
-    .onboard-card { background: var(--bg-card); border-radius: 22px; width: 100%; max-width: 380px; padding: 34px 26px 26px; text-align: center; box-shadow: var(--shadow-lg); }
-    .onboard-step-dots { display: flex; justify-content: center; gap: 6px; margin-bottom: 26px; }
-    .onboard-dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(0,0,0,0.1); transition: background 0.3s; }
-    .onboard-dot.active { background: var(--text-primary); }
-    .onboard-icon { font-size: 50px; margin-bottom: 14px; }
-    .onboard-title { font-size: 22px; font-weight: 700; color: var(--text-primary); margin-bottom: 9px; letter-spacing: -0.4px; }
-    .onboard-body { font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 26px; }
-    .onboard-name-select { width: 100%; padding: 12px 14px; font-size: 15px; background: rgba(0,0,0,0.04); border: 1px solid transparent; border-radius: 11px; color: var(--text-primary); margin-bottom: 18px; outline: none; -webkit-appearance: none; cursor: pointer; font-family: inherit; }
-    .onboard-name-select:focus { border-color: var(--accent); }
-    .onboard-btn { width: 100%; padding: 14px; font-size: 15px; font-weight: 600; background: var(--text-primary); color: #fff; border: none; border-radius: 13px; cursor: pointer; font-family: inherit; }
-    .onboard-btn:active { opacity: 0.85; }
-    .onboard-skip { margin-top: 13px; font-size: 13px; color: var(--text-secondary); cursor: pointer; }
 
     /* ===== CSV IMPORT ===== */
     .csv-import-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 4px; }
@@ -667,6 +652,55 @@
     .lb-score-chip .val { font-size: 13px; font-weight: 700; color: var(--text-primary); }
     .lb-score-chip .lbl { font-size: 9px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.3px; }
     .lb-score-chip .val.streak { color: var(--orange); }
+
+    /* ===== ONBOARDING TUTORIAL ===== */
+    #onboarding-overlay {
+      position: fixed; inset: 0; z-index: 99998;
+      background: rgba(0,0,0,0.84);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px;
+    }
+    #onboarding-overlay.hidden { display: none; }
+    .ob-card {
+      background: rgba(18,18,22,0.96);
+      border: 1px solid rgba(255,255,255,0.11);
+      border-radius: 24px;
+      padding: 32px 26px 26px;
+      max-width: 370px; width: 100%;
+      box-shadow: 0 28px 80px rgba(0,0,0,0.7);
+      color: #fff;
+    }
+    .ob-step { display: none; }
+    .ob-step.active { display: block; }
+    .ob-icon { font-size: 40px; text-align: center; margin-bottom: 10px; }
+    .ob-title { font-size: 21px; font-weight: 700; text-align: center; margin-bottom: 8px; letter-spacing: -0.3px; }
+    .ob-body { font-size: 13.5px; line-height: 1.65; color: rgba(255,255,255,0.68); text-align: center; margin-bottom: 20px; }
+    .ob-tier-list, .ob-mode-list { list-style: none; padding: 0; margin: 0 0 20px; display: flex; flex-direction: column; gap: 7px; }
+    .ob-tier-row, .ob-mode-row { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.06); border-radius: 10px; padding: 9px 12px; }
+    .ob-tier-badge { font-size: 10px; font-weight: 700; border-radius: 6px; padding: 3px 7px; flex-shrink: 0; }
+    .ob-mode-num { width: 22px; height: 22px; border-radius: 50%; background: #00af51; color: #fff; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .ob-row-text strong { font-size: 13px; color: #fff; display: block; }
+    .ob-row-text span { font-size: 11.5px; color: rgba(255,255,255,0.55); display: block; margin-top: 1px; }
+    .ob-leitner-boxes { display: flex; gap: 6px; justify-content: center; margin: 0 0 16px; }
+    .ob-box { width: 46px; height: 46px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; flex-direction: column; gap: 2px; }
+    .ob-box-label { font-size: 9px; opacity: 0.65; }
+    .ob-speed-row { display: flex; gap: 8px; margin-bottom: 18px; }
+    .ob-speed-chip { flex: 1; background: rgba(255,255,255,0.06); border-radius: 10px; padding: 10px 6px; text-align: center; }
+    .ob-speed-chip .sv { font-size: 13px; font-weight: 700; color: #00af51; }
+    .ob-speed-chip .sl { font-size: 10px; color: rgba(255,255,255,0.5); margin-top: 3px; line-height: 1.3; }
+    .ob-dots { display: flex; justify-content: center; gap: 6px; margin-bottom: 18px; }
+    .ob-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.2); transition: background 0.2s, transform 0.2s; }
+    .ob-dot.active { background: #00af51; transform: scale(1.3); }
+    .ob-actions { display: flex; gap: 8px; }
+    .ob-btn-next { flex: 1; background: #00af51; color: #fff; border: none; border-radius: 12px; padding: 13px; font-size: 15px; font-weight: 600; cursor: pointer; transition: opacity 0.15s; }
+    .ob-btn-next:active { opacity: 0.82; }
+    .ob-btn-secondary { background: rgba(255,255,255,0.09); color: rgba(255,255,255,0.65); border: none; border-radius: 12px; padding: 13px 16px; font-size: 14px; cursor: pointer; transition: opacity 0.15s; flex-shrink: 0; }
+    .ob-btn-secondary:active { opacity: 0.7; }
+    /* Help button in header */
+    .help-btn { width: 28px; height: 28px; border-radius: 50%; background: rgba(0,0,0,0.06); border: 1px solid var(--border); font-size: 13px; font-weight: 700; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s, color 0.15s, border-color 0.15s; }
+    .help-btn:hover { background: rgba(0,175,81,0.1); color: #00af51; border-color: rgba(0,175,81,0.4); }
 </style>
 </head>
 <body>
@@ -697,6 +731,98 @@
     <div class="club-badge">Edina, Minnesota</div>
   </div>
 
+  <!-- ONBOARDING TUTORIAL OVERLAY -->
+  <div id="onboarding-overlay" class="hidden">
+    <div class="ob-card">
+
+      <!-- Step 1: Welcome -->
+      <div class="ob-step active" data-step="0">
+        <div class="ob-icon">⛳</div>
+        <div class="ob-title">Welcome to Known</div>
+        <div class="ob-body">Your personal member recognition trainer for Interlachen Country Club.<br><br>Four quick slides and you'll know everything you need to get started.</div>
+      </div>
+
+      <!-- Step 2: Tiers -->
+      <div class="ob-step" data-step="1">
+        <div class="ob-icon">🏷️</div>
+        <div class="ob-title">Member Tiers</div>
+        <div class="ob-body">Members are grouped by visit frequency. Start with T1 and work your way up.</div>
+        <ul class="ob-tier-list">
+          <li class="ob-tier-row">
+            <span class="ob-tier-badge" style="background:#0071e3;color:#fff">T1</span>
+            <div class="ob-row-text"><strong>Top 87 members</strong><span>Most frequent guests — learn these first</span></div>
+          </li>
+          <li class="ob-tier-row">
+            <span class="ob-tier-badge" style="background:#5856d6;color:#fff">T2</span>
+            <div class="ob-row-text"><strong>207 members</strong><span>Regular visitors</span></div>
+          </li>
+          <li class="ob-tier-row">
+            <span class="ob-tier-badge" style="background:#ff9f0a;color:#fff">T3</span>
+            <div class="ob-row-text"><strong>326 members</strong><span>Occasional visitors</span></div>
+          </li>
+          <li class="ob-tier-row">
+            <span class="ob-tier-badge" style="background:#86868b;color:#fff">T4</span>
+            <div class="ob-row-text"><strong>400 members</strong><span>Less frequent — tackle after T1–T3</span></div>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Step 3: Quiz Modes -->
+      <div class="ob-step" data-step="2">
+        <div class="ob-icon">🧠</div>
+        <div class="ob-title">Three Quiz Modes</div>
+        <div class="ob-body">The app automatically advances you through three levels of difficulty as you improve.</div>
+        <ul class="ob-mode-list">
+          <li class="ob-mode-row">
+            <div class="ob-mode-num">1</div>
+            <div class="ob-row-text"><strong>Multiple Choice</strong><span>Pick the right name from 4 photos</span></div>
+          </li>
+          <li class="ob-mode-row">
+            <div class="ob-mode-num">2</div>
+            <div class="ob-row-text"><strong>Recall</strong><span>Type the member's name from memory</span></div>
+          </li>
+          <li class="ob-mode-row">
+            <div class="ob-mode-num">3</div>
+            <div class="ob-row-text"><strong>Production</strong><span>Say the name aloud — mic-based voice recognition</span></div>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Step 4: Leitner System -->
+      <div class="ob-step" data-step="3">
+        <div class="ob-icon">📦</div>
+        <div class="ob-title">Leitner System</div>
+        <div class="ob-body">Every member card moves through 5 boxes. Answer correctly → advance a box. Wrong → back to box 1.</div>
+        <div class="ob-leitner-boxes">
+          <div class="ob-box" style="background:rgba(255,59,48,0.18);color:#ff6b6b"><span>1</span><span class="ob-box-label">New</span></div>
+          <div class="ob-box" style="background:rgba(255,159,10,0.18);color:#ffa930"><span>2</span></div>
+          <div class="ob-box" style="background:rgba(255,214,10,0.18);color:#ffd60a"><span>3</span></div>
+          <div class="ob-box" style="background:rgba(100,210,255,0.18);color:#64d2ff"><span>4</span></div>
+          <div class="ob-box" style="background:rgba(0,175,81,0.22);color:#00af51"><span>5</span><span class="ob-box-label">★</span></div>
+        </div>
+        <div class="ob-body" style="margin-bottom:0">Box 5 = mastered. Cards in later boxes appear less often — time is spent where it counts.</div>
+      </div>
+
+      <!-- Step 5: Speed Scoring -->
+      <div class="ob-step" data-step="4">
+        <div class="ob-icon">⚡</div>
+        <div class="ob-title">Speed Scoring</div>
+        <div class="ob-body">Recognition speed matters on the floor. Your performance is tracked across three dimensions.</div>
+        <div class="ob-speed-row">
+          <div class="ob-speed-chip"><div class="sv">MC</div><div class="sl">Multiple<br>Choice %</div></div>
+          <div class="ob-speed-chip"><div class="sv">Recall</div><div class="sl">Type-name<br>accuracy</div></div>
+          <div class="ob-speed-chip"><div class="sv">🔥</div><div class="sl">Daily<br>streak</div></div>
+        </div>
+        <div class="ob-body" style="margin-bottom:0">Answer quickly and consistently to climb the leaderboard and earn your streak.</div>
+      </div>
+
+      <!-- Progress dots -->
+      <div class="ob-dots" id="ob-dots"></div>
+      <!-- Action buttons -->
+      <div class="ob-actions" id="ob-actions"></div>
+    </div>
+  </div>
+
   <!-- APP -->
   <div id="app">
     <div class="header">
@@ -721,6 +847,7 @@
           <span class="cloud-sync-dot" id="cloud-sync-dot"></span>
           <span id="cloud-sync-label">Local</span>
         </div>
+        <button class="help-btn" id="help-btn" title="Help & Tutorial" onclick="window.showOnboarding && window.showOnboarding()">?</button>
       </div>
     </div>
     <div class="tab-bar">
@@ -866,19 +993,6 @@
     </div>
   </div>
 
-  <!-- ONBOARDING MODAL -->
-  <div class="onboard-overlay" id="onboard-overlay">
-    <div class="onboard-card">
-      <div class="onboard-step-dots">
-        <div class="onboard-dot active" id="onboard-dot-0"></div>
-        <div class="onboard-dot" id="onboard-dot-1"></div>
-        <div class="onboard-dot" id="onboard-dot-2"></div>
-      </div>
-      <div id="onboard-content"></div>
-      <button class="onboard-btn" id="onboard-next-btn">Get Started</button>
-      <div class="onboard-skip" id="onboard-skip">Skip tutorial</div>
-    </div>
-  </div>
 
   <script>
   // ===== DATA =====
@@ -1001,6 +1115,7 @@
   if (sessionStorage.getItem('icc_unlocked')) {
     gate.classList.add('hidden');
     document.getElementById('app').classList.add('active');
+    if (window.checkOnboarding) window.checkOnboarding();
   }
 
   gateInput.addEventListener('input', async () => {
@@ -1010,6 +1125,7 @@
         sessionStorage.setItem('icc_unlocked', '1');
         gate.classList.add('hidden');
         document.getElementById('app').classList.add('active');
+        if (window.checkOnboarding) window.checkOnboarding();
       } else {
         gateHint.textContent = 'Incorrect password';
         gateInput.classList.add('shake');
@@ -1109,6 +1225,7 @@ let productionTimeout = null;
     updateStreakDisplay();
     if (typeof loadFtEventLists === 'function') { loadFtEventLists(); renderLists(); }
     startSession();
+    if (window.checkOnboarding) window.checkOnboarding();
   });
 
   function addProfile(name) {
@@ -1125,6 +1242,61 @@ let productionTimeout = null;
     if (typeof loadFtEventLists === 'function') { loadFtEventLists(); renderLists(); }
     startSession();
   }
+
+  // ===== ONBOARDING TUTORIAL =====
+  (function initOnboarding() {
+    const OB_TOTAL = 5;
+    let obStep = 0;
+    const overlay = document.getElementById('onboarding-overlay');
+    const dotsEl  = document.getElementById('ob-dots');
+    const actionsEl = document.getElementById('ob-actions');
+
+    function obKey() {
+      const p = (typeof getCurrentProfile === 'function') ? getCurrentProfile() : 'Guest';
+      return 'icc_onboarded_' + p.replace(/\s+/g, '_');
+    }
+
+    function renderDots() {
+      dotsEl.innerHTML = Array.from({length: OB_TOTAL}, (_, i) =>
+        `<div class="ob-dot${i === obStep ? ' active' : ''}"></div>`
+      ).join('');
+    }
+
+    function renderActions() {
+      const isFirst = obStep === 0;
+      const isLast  = obStep === OB_TOTAL - 1;
+      actionsEl.innerHTML =
+        (isFirst
+          ? `<button class="ob-btn-secondary" onclick="window._obDismiss()">Skip</button>`
+          : `<button class="ob-btn-secondary" onclick="window._obBack()">← Back</button>`) +
+        `<button class="ob-btn-next" onclick="${isLast ? 'window._obDismiss()' : 'window._obNext()'}">
+           ${isLast ? 'Get Started' : 'Next →'}
+         </button>`;
+    }
+
+    function obShow(step) {
+      obStep = step || 0;
+      document.querySelectorAll('.ob-step').forEach((el, i) => {
+        el.classList.toggle('active', i === obStep);
+      });
+      renderDots();
+      renderActions();
+      overlay.classList.remove('hidden');
+    }
+
+    window._obNext    = function() { if (obStep < OB_TOTAL - 1) obShow(obStep + 1); };
+    window._obBack    = function() { if (obStep > 0) obShow(obStep - 1); };
+    window._obDismiss = function() {
+      localStorage.setItem(obKey(), '1');
+      overlay.classList.add('hidden');
+    };
+    window.showOnboarding  = function() { obShow(0); };
+    window.checkOnboarding = function() {
+      if (!localStorage.getItem(obKey())) {
+        setTimeout(function() { obShow(0); }, 320);
+      }
+    };
+  })();
 
   // ===== MC ACCURACY TRACKING (for auto-advance to recall) =====
   const MC_ACC_KEY = 'icc_mc_accuracy';
@@ -3387,85 +3559,6 @@ function showProductionFallback(idx) {
         showRecallMicResult(false, performance.now() - _micCardStart, "");
       });
     }
-
-  // ===== ONBOARDING =====
-  (function initOnboarding() {
-    const ONBOARD_KEY = 'icc_onboarded_v1';
-    if (localStorage.getItem(ONBOARD_KEY)) return; // already seen
-
-    const steps = [
-      {
-        icon: '👋',
-        title: 'Welcome to Known',
-        body: 'Known helps Interlachen staff learn every member\'s name before they reach the first tee.<br><br>Pick your name below so your progress is saved just for you.',
-        showNameSelect: true,
-        btn: 'Next →'
-      },
-      {
-        icon: '📸',
-        title: 'How It Works',
-        body: 'You\'ll see a member\'s photo. Choose the right name from 4 options.<br><br>The app tracks which members you know well and keeps drilling the ones you don\'t — so every face becomes familiar.',
-        btn: 'Next →'
-      },
-      {
-        icon: '🏆',
-        title: 'Three Modes',
-        body: '<b style="color:var(--accent)">Multiple Choice</b> — tap the right name.<br><br><b style="color:var(--accent)">Recall</b> — type it from memory.<br><br><b style="color:var(--accent)">Production</b> — say it out loud.<br><br>Start with Multiple Choice and work your way up.',
-        btn: 'Start Training'
-      }
-    ];
-
-    let step = 0;
-    const overlay = document.getElementById('onboard-overlay');
-    const content = document.getElementById('onboard-content');
-    const nextBtn = document.getElementById('onboard-next-btn');
-    const skipEl = document.getElementById('onboard-skip');
-
-    function renderStep() {
-      const s = steps[step];
-      [0,1,2].forEach(i => {
-        const dot = document.getElementById('onboard-dot-' + i);
-        if (dot) dot.classList.toggle('active', i === step);
-      });
-      const nameSelectHtml = s.showNameSelect ? `
-        <select class="onboard-name-select" id="onboard-name-sel">
-          ${getProfiles().map(p => `<option value="${p}"${p===getCurrentProfile()?' selected':''}>${p}</option>`).join('')}
-        </select>` : '';
-      content.innerHTML = `
-        <div class="onboard-icon">${s.icon}</div>
-        <div class="onboard-title">${s.title}</div>
-        ${nameSelectHtml}
-        <div class="onboard-body">${s.body}</div>`;
-      nextBtn.textContent = s.btn;
-      // Wire name selector immediately
-      const sel = document.getElementById('onboard-name-sel');
-      if (sel) sel.addEventListener('change', function() {
-        setCurrentProfile(this.value);
-        document.getElementById('profile-select').value = this.value;
-        mcAccuracy = JSON.parse(localStorage.getItem(pKey('icc_mc_accuracy')) || '{}');
-        updateScoresDisplay();
-      });
-    }
-
-    nextBtn.addEventListener('click', function() {
-      step++;
-      if (step >= steps.length) {
-        dismiss();
-      } else {
-        renderStep();
-      }
-    });
-
-    skipEl.addEventListener('click', dismiss);
-
-    function dismiss() {
-      localStorage.setItem(ONBOARD_KEY, '1');
-      overlay.classList.remove('show');
-    }
-
-    renderStep();
-    overlay.classList.add('show');
-  })();
 
   // ===== MANAGER DASHBOARD =====
   (function initManager() {
