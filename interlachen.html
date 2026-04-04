@@ -2137,6 +2137,7 @@ let productionTimeout = null;
           let targetBarHTML = '';
           if (gt || dd) {
             const fillPct = threshold > 0 ? Math.min(100, Math.round(current / threshold * 100)) : 0;
+            const tickPct = threshold > 0 ? 100 : 0;
             const fillColor = isOverdue && !targetMet ? 'var(--red)' : targetMet ? '#00af51' : '#f4ee19';
             const dueLabel = daysLeft === null ? '' : isOverdue ? `${Math.abs(daysLeft)}d overdue` : daysLeft === 0 ? 'Due today' : `${daysLeft}d left`;
             const dueCls = isOverdue ? 'overdue' : '';
@@ -2147,7 +2148,7 @@ let productionTimeout = null;
               </div>
               ${gt ? `<div class="asgn-progress-track" style="height:6px">
                 <div class="asgn-progress-fill" style="width:${fillPct}%;background:${fillColor}"></div>
-                <div class="asgn-target-tick" style="left:100%"></div>
+                <div class="asgn-target-tick" style="left:${tickPct}%"></div>
               </div>
               <div class="asgn-score-row">
                 <span class="current">${accPct !== null ? accPct + '% accuracy' : 'No quiz data yet'}</span>
@@ -2178,6 +2179,7 @@ let productionTimeout = null;
                 <button class="list-share-copy-btn" onclick="copyListTestLink(this)">Copy Link</button>
               </div>
             </div>
+            ${targetBarHTML}
           </div>`;
         }).join('')}
       </div>`;
