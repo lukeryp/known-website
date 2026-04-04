@@ -159,6 +159,16 @@
     .list-actions button { flex: 1; padding: 9px; font-size: 13px; font-weight: 600; border-radius: 10px; cursor: pointer; border: none; font-family: inherit; }
     .btn-test { background: var(--text-primary); color: #fff; }
     .btn-view { background: rgba(0,0,0,0.05); color: var(--text-primary); }
+    .btn-unassign { background: rgba(255,59,48,0.08); color: var(--red); border: none; padding: 9px 14px; font-size: 13px; font-weight: 600; border-radius: 10px; cursor: pointer; font-family: inherit; }
+    .btn-unassign:active { opacity: 0.7; }
+    .assigned-events-section { padding: 16px 18px 4px; }
+    .assigned-events-title { font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 10px; }
+    .assigned-event-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 14px 16px; margin-bottom: 10px; box-shadow: var(--shadow-sm); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .assigned-event-info { flex: 1; min-width: 0; }
+    .assigned-event-name { font-size: 15px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .assigned-event-date { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+    .assigned-event-meta { font-size: 12px; color: var(--text-secondary); margin-top: 1px; }
+    .assigned-event-actions { display: flex; gap: 8px; flex-shrink: 0; }
 
     /* ===== LIST DETAIL ===== */
     .list-detail { padding: 18px; }
@@ -418,13 +428,6 @@
     .mgr-assigned-chip button { background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 15px; line-height: 1; padding: 0 0 0 2px; transition: color 0.15s; }
     .mgr-assigned-chip button:hover { color: var(--red); }
     .mgr-no-events { color: var(--text-secondary); font-size: 13px; text-align: center; padding: 28px 0; line-height: 1.6; }
-    .assigned-events-section { margin-bottom: 20px; }
-    .assigned-events-title { font-size: 13px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; padding: 0 2px; }
-    .assigned-event-card { display: flex; align-items: center; justify-content: space-between; background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; margin-bottom: 8px; box-shadow: var(--shadow-sm); }
-    .assigned-event-name { font-size: 15px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.2px; }
-    .assigned-event-meta { font-size: 12px; color: var(--text-secondary); margin-top: 3px; }
-    .assigned-event-remove { padding: 7px 14px; font-size: 12px; font-weight: 600; background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.1); border-radius: 10px; color: var(--text-secondary); cursor: pointer; white-space: nowrap; font-family: inherit; transition: all 0.15s; flex-shrink: 0; }
-    .assigned-event-remove:active { opacity: 0.7; }
 
     /* ===== PRODUCTION MODE CARD ===== */
     .production-card { text-align: center; padding: 22px 18px; }
@@ -1868,28 +1871,34 @@ let productionTimeout = null;
 
   function renderLists() {
     const profileKey = getCurrentProfile().replace(/\s+/g, '_');
-    const assignedIds = JSON.parse(localStorage.getItem('icc_ft_assign_' + profileKey) || '[]');
-    const ftEvents = JSON.parse(localStorage.getItem('icc_ft_events') || '[]');
-    const assignedEvents = assignedIds.map(id => ftEvents.find(e => e.id === id)).filter(Boolean);
+    const indexed = LISTS.map((l, i) => ({ l, i }));
+    const assignedLists = indexed.filter(({ l }) => l.source === 'foretees');
+    const regularLists = indexed.filter(({ l }) => l.source !== 'foretees');
 
     let html = '';
-    if (assignedEvents.length) {
+
+    if (assignedLists.length) {
       html += `<div class="assigned-events-section">
         <div class="assigned-events-title">Assigned Events</div>
-        ${assignedEvents.map(ev => {
-          const metaParts = [ev.date, ev.time].filter(Boolean);
+        ${assignedLists.map(({ l: list, i: li }) => {
+          const hasDate = list.due && list.due !== '2026-12-31';
+          const dateStr = hasDate ? new Date(list.due + 'T12:00:00').toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) : '';
           return `<div class="assigned-event-card">
             <div class="assigned-event-info">
-              <div class="assigned-event-name">⛳ ${ev.name}</div>
-              ${metaParts.length ? `<div class="assigned-event-meta">${metaParts.join(' · ')}</div>` : ''}
+              <div class="assigned-event-name">${list.name}</div>
+              ${dateStr ? `<div class="assigned-event-date">${dateStr}</div>` : ''}
+              <div class="assigned-event-meta">${list.ids.length} members enrolled</div>
             </div>
-            <button class="assigned-event-remove" onclick="removeAssignedEvent('${ev.id}','${profileKey}')">Remove</button>
+            <div class="assigned-event-actions">
+              <button class="btn-view" onclick="showListDetail(${li})">Study</button>
+              <button class="btn-unassign" onclick="unassignListEvent('${list.eventId}','${profileKey}')">Remove</button>
+            </div>
           </div>`;
         }).join('')}
       </div>`;
     }
 
-    html += LISTS.map((list, li) => {
+    html += regularLists.map(({ l: list, i: li }) => {
       const total = list.ids.length;
       const days = daysUntil(list.due);
       const urgency = days <= 2 ? 'urgent' : days <= 7 ? 'soon' : 'ok';
@@ -1912,13 +1921,6 @@ let productionTimeout = null;
 
     listsContainer.innerHTML = html;
   }
-
-  window.removeAssignedEvent = function(eventId, profileKey) {
-    const current = JSON.parse(localStorage.getItem('icc_ft_assign_' + profileKey) || '[]');
-    localStorage.setItem('icc_ft_assign_' + profileKey, JSON.stringify(current.filter(id => id !== eventId)));
-    loadFtEventLists();
-    renderLists();
-  };
 
   window.showListDetail = function(li) {
     const list = LISTS[li];
@@ -1992,6 +1994,13 @@ let productionTimeout = null;
     });
   }
   loadFtEventLists();
+
+  window.unassignListEvent = function(eventId, profileKey) {
+    const current = JSON.parse(localStorage.getItem('icc_ft_assign_' + profileKey) || '[]');
+    localStorage.setItem('icc_ft_assign_' + profileKey, JSON.stringify(current.filter(id => id !== eventId)));
+    loadFtEventLists();
+    renderLists();
+  };
 
   renderLists();
 
