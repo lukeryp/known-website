@@ -1301,6 +1301,10 @@ let productionTimeout = null;
   });
   updateNotifBadge();
 
+  // Mark all pre-existing notifications as read so the badge only shows fresh activity
+  saveNotifications(getNotifications().map(n => ({...n, read: true})));
+  updateNotifBadge();
+
   // Notify about overdue lists on app load (once per day per list)
   (function checkOverdueLists() {
     const today = new Date().toISOString().split('T')[0];
@@ -2049,10 +2053,10 @@ let productionTimeout = null;
             <div class="assigned-event-info">
               <div class="assigned-event-name">${list.name}</div>
               ${dateStr ? `<div class="assigned-event-date">${dateStr}</div>` : ''}
-              <div class="assigned-event-meta">${list.ids.length} members enrolled</div>
+              <div class="assigned-event-meta">${list.ids.length > 0 ? list.ids.length + ' members enrolled' : 'Members TBD'}</div>
             </div>
             <div class="assigned-event-actions">
-              <button class="btn-view" onclick="showListDetail(${li})">Study</button>
+              <button class="btn-view" onclick="showListDetail(${li})">📖 Study</button>
               <button class="btn-unassign" onclick="unassignListEvent('${list.eventId}','${profileKey}')">Remove</button>
             </div>
           </div>`;
@@ -3076,6 +3080,9 @@ function showProductionFallback(idx) {
     const mgrBtn = document.getElementById('mgr-tab-btn');
     if (mgrBtn) mgrBtn.style.display = '';
 
+    // Expose so the tab click handler (outside this IIFE) can call it
+    window.renderMgrDashboard = function() { renderMgrDashboard(); };
+
     function getProfileStats(profileName) {
       const key = profileName.replace(/\s+/g, '_');
       const leitner = JSON.parse(localStorage.getItem('icc_leitner_' + key) || '{}');
@@ -3091,7 +3098,7 @@ function showProductionFallback(idx) {
         if ((leitner[i]||0) >= 5) tierMastered[g.tier] = (tierMastered[g.tier]||0) + 1;
       });
       const lastActive = localStorage.getItem('icc_last_active_' + key) || null;
-      const totalAnswered = Object.values(mcAcc).reduce((s,v) => s + (v.total||0), 0);
+      const totalAnswered = scores.mcTotal || Object.values(mcAcc).reduce((s,v) => s + (v.total||0), 0);
       return { mastered, masteryPct, accPct, tierMastered, tierTotal, lastActive, totalAnswered };
     }
 
@@ -3204,7 +3211,7 @@ function showProductionFallback(idx) {
     }
 
     function renderMgrDashboard() {
-      const profiles = getProfiles().filter(p => p !== 'Guest');
+      const profiles = [...new Set(getProfiles())].filter(p => p !== 'Guest');
       const allStats = profiles.map(p => ({ name: p, ...getProfileStats(p) }));
       const avgMastery = allStats.length ? Math.round(allStats.reduce((s,x)=>s+x.masteryPct,0)/allStats.length) : 0;
       const activeCount = allStats.filter(x => x.totalAnswered > 0).length;
