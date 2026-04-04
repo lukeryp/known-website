@@ -1455,7 +1455,7 @@ let productionTimeout = null;
       currentQ = sIdx;
       const sG = GOLFERS[sIdx];
       updateSessionProgress();
-      if (isProductionMode(sIdx)) { renderProductionCard(sG, sIdx); }
+      if (quizMode === 'production' || isProductionMode(sIdx)) { renderProduction(sG, sIdx); }
       else if (quizMode === 'recall' || isInRecallMode(sIdx)) { renderRecall(sG, sIdx, isInRecallMode(sIdx)); }
       else { renderQuiz(sG, sIdx); }
       return;
@@ -1768,14 +1768,16 @@ let productionTimeout = null;
       confFill.style.width = Math.round(confidence * 100) + '%';
       skipBtn.textContent = 'Next →';
       if (correct) promoteBox(idx); else demoteBox(idx);
+      scheduleReview(idx, getBox(idx), Date.now() - cardStart, 'recall');
       recordScore('recall', correct);
       logQuizEntry(idx, 'recall', correct, Date.now() - cardStart);
+      if (sessionActive) trackSessionResult(idx, correct, 'recall', Date.now() - cardStart);
       showDetails(g, idx);
       updateProgress();
       answered = true;
       if (correct) {
         setTimeout(() => {
-          if (quizMode === 'production') goToNext();
+          if (quizMode === 'production') { tapReady = true; goToNext(); }
         }, 1400);
       } else {
         setTimeout(() => {
@@ -1792,8 +1794,10 @@ let productionTimeout = null;
       resolved = true;
       stopProduction();
       demoteBox(idx);
+      scheduleReview(idx, getBox(idx), Date.now() - cardStart, 'recall');
       recordScore('recall', false);
       logQuizEntry(idx, 'recall', false, Date.now() - cardStart);
+      if (sessionActive) trackSessionResult(idx, false, 'recall', Date.now() - cardStart);
       showDetails(g, idx);
       updateProgress();
       answered = true;
