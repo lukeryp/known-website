@@ -307,10 +307,48 @@
       .member-photo { width: 240px; height: 240px; }
     }
 
-    /* ===== 1024px: Desktop ===== */
+    /* ===== 1024px: Desktop — sidebar nav ===== */
     @media (min-width: 1024px) {
-      .lists-container { grid-template-columns: repeat(3, 1fr); max-width: 900px; margin: 0 auto; }
-      .staff-container { grid-template-columns: repeat(3, 1fr); max-width: 900px; margin: 0 auto; }
+      #app.active {
+        display: grid;
+        grid-template-columns: 180px 1fr;
+        grid-template-rows: auto 1fr;
+        grid-template-areas: "header header" "tabs content";
+        overflow: hidden;
+      }
+      .header { grid-area: header; }
+      .tab-bar {
+        grid-area: tabs;
+        position: static;
+        flex-direction: column;
+        border-bottom: none;
+        border-right: 1px solid var(--border);
+        overflow-x: visible;
+        overflow-y: auto;
+        align-items: stretch;
+        padding-top: 8px;
+        box-shadow: none;
+      }
+      .tab-bar button {
+        flex: initial;
+        text-align: left;
+        border-bottom: none;
+        border-top: none;
+        border-left: 3px solid transparent;
+        padding: 13px 20px;
+        font-size: 13px;
+        border-radius: 0 8px 8px 0;
+        margin-right: 8px;
+      }
+      .tab-bar button.active {
+        border-left-color: var(--text-primary);
+        border-bottom-color: transparent;
+        border-top-color: transparent;
+        background: rgba(0,0,0,0.04);
+      }
+      .tab-content { grid-area: content; overflow-y: auto; padding-bottom: 0; }
+      .lists-container { grid-template-columns: repeat(3, 1fr); max-width: none; }
+      .staff-container { grid-template-columns: repeat(2, 1fr); max-width: none; }
       .mgr-staff-grid { grid-template-columns: repeat(3, 1fr); }
       .mgr-events-grid { grid-template-columns: repeat(3, 1fr); }
       .mgr-dashboard { max-width: 900px; margin: 0 auto; }
@@ -1269,40 +1307,40 @@ let productionTimeout = null;
     });
   })();
 
-  // Daily review reminders — once per day per profile
+  // Daily review reminders — once per calendar day
   (function checkDailyReview() {
     const today = new Date().toISOString().split('T')[0];
     const dailyKey = 'icc_daily_check_' + today;
     if (localStorage.getItem(dailyKey)) return;
-    localStorage.setItem(dailyKey, '1');
 
     const DAY_MS = 86400000;
+    const now = Date.now();
     const profiles = getProfiles().filter(p => p !== 'Guest');
-    profiles.forEach(p => {
-      const key = p.replace(/\s+/g, '_');
-      const lastActive = localStorage.getItem('icc_last_active_' + key);
-      const leitner = JSON.parse(localStorage.getItem('icc_leitner_' + key) || '{}');
-      const dueItems = Object.values(leitner).filter(v => v > 0 && v < 5).length;
+    profiles.forEach(name => {
+      const key = name.replace(/\s+/g, '_');
 
-      if (lastActive) {
-        const lastDate = new Date(lastActive);
-        const msSince = Date.now() - lastDate.getTime();
-        if (msSince >= DAY_MS) {
-          const daysSince = Math.floor(msSince / DAY_MS);
-          addNotification(
-            `📚 ${p} hasn't studied in ${daysSince} day${daysSince !== 1 ? 's' : ''}`,
-            'Open the app and keep your streak going!'
-          );
+      // Use history timestamps (reliable ms values) to detect inactivity
+      const hist = JSON.parse(localStorage.getItem('icc_history_' + key) || '[]');
+      if (hist.length > 0) {
+        const daysSince = Math.floor((now - hist[0].ts) / DAY_MS);
+        if (daysSince >= 1) {
+          const label = daysSince === 1 ? '1 day' : daysSince + ' days';
+          addNotification(`📚 ${name} hasn't studied in ${label}`, 'Open the Learn tab to keep up the streak.');
         }
       }
 
+      // Leitner boxes 1–4 = actively learning, due for review
+      const leitner = JSON.parse(localStorage.getItem('icc_leitner_' + key) || '{}');
+      const dueItems = Object.values(leitner).filter(v => v >= 1 && v <= 4).length;
       if (dueItems > 0) {
         addNotification(
-          `🔄 ${p} has ${dueItems} member${dueItems !== 1 ? 's' : ''} due for review`,
+          `🔄 ${name} has ${dueItems} item${dueItems !== 1 ? 's' : ''} due for review`,
           'Keep those Leitner boxes moving!'
         );
       }
     });
+
+    localStorage.setItem(dailyKey, '1');
   })();
 
   const quizCard = document.getElementById('quiz-card');
@@ -3295,39 +3333,52 @@ function showProductionFallback(idx) {
 
       const staffRows = allStats.map(s => `
         <tr>
-          <td>${s.name}</td>
-          <td>${s.totalAnswered}</td>
+          <td><strong>${s.name}</strong></td>
+          <td>${s.totalAnswered || 0}</td>
           <td>${s.accPct !== null ? s.accPct + '%' : '—'}</td>
-          <td>${s.masteryPct}%</td>
-          <td>${s.lastActive || '—'}</td>
+          <td>
+            ${s.masteryPct}%
+            <div style="width:80px;height:4px;background:rgba(0,0,0,.08);border-radius:2px;margin-top:4px;overflow:hidden;display:inline-block;vertical-align:middle;margin-left:6px">
+              <div style="width:${s.masteryPct}%;height:100%;background:${s.masteryPct>=80?'#34c759':s.masteryPct>=40?'#ff9f0a':'#1d1d1f'};border-radius:2px"></div>
+            </div>
+          </td>
+          <td>${s.lastActive || '<span style="color:#aeaeb2;font-style:italic">Never</span>'}</td>
         </tr>`).join('');
 
+      // Per-staff list completion
       const listRows = LISTS.map(l => {
         const days = typeof daysUntil === 'function' ? daysUntil(l.due) : null;
         const status = !l.due || l.due === '2026-12-31' ? '—'
-          : days < 0 ? `<span style="color:#ff3b30;font-weight:600">Overdue by ${Math.abs(days)}d</span>`
+          : days < 0 ? `<span style="color:#ff3b30;font-weight:600">Overdue ${Math.abs(days)}d</span>`
           : days === 0 ? '<span style="color:#ff9f0a;font-weight:600">Due today</span>'
-          : `<span style="color:#34c759">On track (${days}d left)</span>`;
-        return `<tr><td>${l.name}</td><td>${l.due && l.due !== '2026-12-31' ? l.due : '—'}</td><td>${status}</td></tr>`;
+          : `<span style="color:#34c759">${days}d left</span>`;
+        const perStaff = profiles.map(p => {
+          const lk = p.replace(/\s+/g,'_');
+          const leitner = JSON.parse(localStorage.getItem('icc_leitner_' + lk) || '{}');
+          const m = l.ids.filter(id => (leitner[id]||0) >= 5).length;
+          const pct = l.ids.length ? Math.round(m/l.ids.length*100) : 0;
+          return `<td>${m}/${l.ids.length}<br><span style="color:#6e6e73;font-size:11px">${pct}%</span></td>`;
+        }).join('');
+        return `<tr><td><strong>${l.name}</strong></td><td>${l.due && l.due !== '2026-12-31' ? l.due : '—'}</td><td>${status}</td>${perStaff}</tr>`;
       }).join('');
 
       const eventRows = events.map(ev => {
         const assigned = profiles.filter(p => getFtAssign(p.replace(/\s+/g,'_')).includes(ev.id));
-        return `<tr><td>${ev.name}</td><td>${ev.date || '—'}</td><td>${assigned.length ? assigned.join(', ') : '<em style="color:#86868b">Unassigned</em>'}</td></tr>`;
+        return `<tr><td><strong>${ev.name}</strong></td><td>${ev.date || '—'}</td><td>${assigned.length ? assigned.map(p=>`<span style="background:rgba(0,0,0,.06);border-radius:12px;padding:2px 9px;font-size:12px;margin-right:4px">${p}</span>`).join('') : '<em style="color:#86868b">Unassigned</em>'}</td></tr>`;
       }).join('');
 
       const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
 <title>Manager Report — Interlachen CC</title>
 <style>
   body { font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif; background: #f5f5f7; color: #1d1d1f; margin: 0; padding: 32px; -webkit-font-smoothing: antialiased; }
-  .report { max-width: 860px; margin: 0 auto; background: #fff; border-radius: 18px; padding: 40px 48px; box-shadow: 0 2px 20px rgba(0,0,0,0.08); }
+  .report { max-width: 960px; margin: 0 auto; background: #fff; border-radius: 18px; padding: 40px 48px; box-shadow: 0 2px 20px rgba(0,0,0,0.08); }
   .report-header { border-bottom: 2px solid #1d1d1f; padding-bottom: 20px; margin-bottom: 32px; display: flex; justify-content: space-between; align-items: flex-end; }
   .report-header h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; margin: 0; }
   .report-header .meta { font-size: 13px; color: #6e6e73; text-align: right; line-height: 1.6; }
   h2 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: #6e6e73; margin: 32px 0 12px; }
-  table { width: 100%; border-collapse: collapse; font-size: 14px; }
-  th { text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #6e6e73; padding: 8px 12px; border-bottom: 1px solid #e5e5ea; }
-  td { padding: 11px 12px; border-bottom: 1px solid #f2f2f7; vertical-align: middle; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #6e6e73; padding: 8px 12px; border-bottom: 1px solid #e5e5ea; }
+  td { padding: 10px 12px; border-bottom: 1px solid #f2f2f7; vertical-align: middle; }
   tr:last-child td { border-bottom: none; }
   .print-btn { display: inline-block; margin-top: 32px; padding: 12px 28px; background: #1d1d1f; color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
   @media print {
@@ -3335,13 +3386,14 @@ function showProductionFallback(idx) {
     .report { box-shadow: none; border-radius: 0; padding: 20px 24px; }
     .print-btn { display: none; }
     h2 { margin-top: 24px; }
+    @page { margin: 0.75in; }
   }
 </style>
 </head><body>
 <div class="report">
   <div class="report-header">
     <div>
-      <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#6e6e73;margin-bottom:6px">Interlachen Country Club</div>
+      <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#6e6e73;margin-bottom:6px">Interlachen Country Club · Edina, Minnesota</div>
       <h1>Staff Progress Report</h1>
     </div>
     <div class="meta">${today}<br>${profiles.length} staff · ${GOLFERS.length} members</div>
@@ -3353,9 +3405,9 @@ function showProductionFallback(idx) {
     <tbody>${staffRows || '<tr><td colspan="5" style="color:#86868b;font-style:italic">No staff profiles</td></tr>'}</tbody>
   </table>
 
-  <h2>List Status</h2>
+  <h2>List Completion by Staff</h2>
   <table>
-    <thead><tr><th>List Name</th><th>Deadline</th><th>Status</th></tr></thead>
+    <thead><tr><th>List</th><th>Deadline</th><th>Status</th>${profiles.map(p=>`<th>${p}</th>`).join('')}</tr></thead>
     <tbody>${listRows || '<tr><td colspan="3" style="color:#86868b;font-style:italic">No lists</td></tr>'}</tbody>
   </table>
 
@@ -3372,6 +3424,7 @@ function showProductionFallback(idx) {
 
       const w = window.open('', '_blank');
       if (w) { w.document.write(html); w.document.close(); }
+      else { alert('Please allow popups to view the report.'); }
     }
 
     window.renderMgrDashboard = renderMgrDashboard;
