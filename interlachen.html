@@ -554,6 +554,22 @@
     .asgn-target-tick { position: absolute; top: -3px; width: 2px; height: 12px; background: rgba(0,0,0,0.3); border-radius: 1px; transform: translateX(-50%); pointer-events: none; }
     .asgn-score-row { display: flex; justify-content: space-between; margin-top: 5px; font-size: 11px; color: var(--text-secondary); }
     .asgn-overdue-badge { display: inline-flex; align-items: center; gap: 4px; background: rgba(255,59,48,0.1); color: var(--red); font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 20px; border: 1px solid rgba(255,59,48,0.2); margin-top: 6px; }
+    /* ===== MGR ANALYTICS EXTRAS ===== */
+    .mgr-perf-section { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+    .mgr-perf-row { padding: 8px 12px; background: rgba(0,0,0,0.025); border-radius: 10px; }
+    .mgr-lb-list { display: flex; flex-direction: column; gap: 5px; }
+    .mgr-lb-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: rgba(0,0,0,0.025); border-radius: 12px; font-size: 13px; }
+    .mgr-lb-rank { width: 22px; font-size: 11px; font-weight: 700; color: var(--text-secondary); text-align: center; flex-shrink: 0; }
+    .mgr-lb-name { flex: 1; font-weight: 600; }
+    .mgr-lb-stats { display: flex; gap: 12px; }
+    .mgr-lb-stat { text-align: center; }
+    .mgr-lb-stat .v { font-size: 13px; font-weight: 700; }
+    .mgr-lb-stat .l { font-size: 9px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.3px; }
+    .mgr-heatmap { display: grid; grid-template-columns: repeat(28, 1fr); gap: 3px; margin: 10px 0 4px; }
+    .mgr-heat-cell { aspect-ratio: 1; border-radius: 2px; min-height: 10px; }
+    .mgr-heat-label { display: flex; justify-content: space-between; font-size: 10px; color: var(--text-secondary); }
+    .mgr-sparkline-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .mgr-sparkline-name { font-size: 12px; font-weight: 600; width: 90px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
     /* ===== PRODUCTION MODE CARD ===== */
     .production-card { text-align: center; padding: 22px 18px; }
@@ -3589,6 +3605,34 @@ function showProductionFallback(idx) {
                 <button class="mgr-assign-btn" onclick="assignFromSelect('${selId}','${ev.id}')">Assign</button>
               </div>
             </div>`;
+          const perfSection = (function() {
+            const items = assignedStaff.map(function(p) {
+              const k = p.replace(/\s+/g,'_');
+              const m = getFtAssignMeta(k)[ev.id] || {};
+              if (!m.grade_target && !m.due_date) return '';
+              const st = getProfileStats(p);
+              const threshold = m.grade_target ? (GRADE_THRESHOLDS[m.grade_target] || 0) : null;
+              const currentPct = st.masteryPct;
+              const daysLeft = m.due_date ? Math.round((new Date(m.due_date + 'T00:00:00') - new Date()) / 86400000) : null;
+              const isOverdue = daysLeft !== null && daysLeft < 0;
+              const targetMet = threshold !== null && currentPct >= threshold;
+              const statusColor = !threshold ? '#6e6e73' : targetMet ? '#00af51' : (isOverdue || currentPct < threshold * 0.7) ? '#ff3b30' : '#ff9f0a';
+              const fillPct = threshold ? Math.min(100, Math.round(currentPct / threshold * 100)) : 0;
+              const dueLabel = daysLeft === null ? '' : isOverdue ? (Math.abs(daysLeft) + 'd overdue') : daysLeft === 0 ? 'Due today' : (daysLeft + 'd left');
+              return '<div class="mgr-perf-row">' +
+                '<div style="display:flex;align-items:center;gap:6px;margin-bottom:' + (threshold ? 6 : 0) + 'px">' +
+                '<span style="width:7px;height:7px;border-radius:50%;background:' + statusColor + ';flex-shrink:0"></span>' +
+                '<span style="font-size:12px;font-weight:600;flex:1">' + p + '</span>' +
+                (m.grade_target ? '<span style="font-size:11px;font-weight:700;color:' + statusColor + '">Target ' + m.grade_target + '</span>' : '') +
+                (dueLabel ? '<span style="font-size:11px;color:' + (isOverdue ? 'var(--red)' : 'var(--text-secondary)') + '"> · ' + dueLabel + '</span>' : '') +
+                '</div>' +
+                (threshold ? '<div class="asgn-progress-track"><div class="asgn-progress-fill" style="width:' + fillPct + '%;background:' + statusColor + '"></div></div>' +
+                '<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-secondary);margin-top:3px">' +
+                '<span>' + currentPct + '% mastery</span><span>' + threshold + '% target' + (targetMet ? ' ✓' : '') + '</span></div>' : '') +
+                '</div>';
+            }).filter(Boolean);
+            return items.length ? '<div class="mgr-perf-section">' + items.join('') + '</div>' : '';
+          })();
           return `
           <div class="mgr-event-card">
             <div class="mgr-event-name">${ev.name}</div>
@@ -3603,6 +3647,7 @@ function showProductionFallback(idx) {
                   return `<span class="mgr-assigned-chip">${p}${gradeChip}${dueChip}<button onclick="unassignFtEvent('${ev.id}','${k}')" title="Remove">×</button></span>`;
                 }).join('')}
               </div>
+              ${perfSection}
               <div style="margin-top:8px">
                 <button class="mgr-assign-btn" style="background:rgba(0,0,0,0.06);color:var(--text-primary);font-size:12px;padding:6px 14px" onclick="this.style.display='none';document.getElementById('${selId}-x').style.display='block'">+ Assign another</button>
                 <div id="${selId}-x" style="display:none">
@@ -3787,6 +3832,76 @@ function showProductionFallback(idx) {
         if (h.correct) tierAcc[g.tier].c++;
       });
 
+      // Leaderboard
+      const lbMedals = ['🥇','🥈','🥉'];
+      const lbEntries = profiles.map(function(p) {
+        const st = getProfileStats(p);
+        const sk = JSON.parse(localStorage.getItem('icc_streak_' + p.replace(/\s+/g,'_')) || '{"current":0}');
+        const ph = JSON.parse(localStorage.getItem('icc_history_' + p.replace(/\s+/g,'_')) || '[]');
+        const practiceMin = Math.round(ph.reduce(function(s,h){return s+(h.ms||0);},0)/60000);
+        return { name: p, mastery: st.masteryPct, streak: sk.current||0, practiceMin };
+      }).sort(function(a,b){return b.mastery-a.mastery||b.streak-a.streak;});
+      const lbHTML = lbEntries.length > 1 ? '<div class="mgr-section-title">Leaderboard</div><div class="mgr-analytics-card"><div class="mgr-lb-list">' +
+        lbEntries.map(function(e,i) {
+          return '<div class="mgr-lb-row">' +
+            '<div class="mgr-lb-rank">' + (lbMedals[i]||i+1) + '</div>' +
+            '<div class="mgr-lb-name">' + e.name + '</div>' +
+            '<div class="mgr-lb-stats">' +
+              '<div class="mgr-lb-stat"><div class="v">' + e.mastery + '%</div><div class="l">Mastery</div></div>' +
+              '<div class="mgr-lb-stat"><div class="v">' + (e.streak>0?'🔥':'')+e.streak + '</div><div class="l">Streak</div></div>' +
+              '<div class="mgr-lb-stat"><div class="v">' + e.practiceMin + 'm</div><div class="l">Practice</div></div>' +
+            '</div></div>';
+        }).join('') + '</div></div>' : '';
+
+      // Activity heatmap (28 days, all staff combined)
+      const heatDays = Array.from({length:28}, function(_,i) {
+        const d = new Date(now - (27-i)*DAY);
+        return { count: 0, label: d.toLocaleDateString('en-US',{month:'short',day:'numeric'}) };
+      });
+      allHistory.forEach(function(h) {
+        const ago = Math.floor((now - h.ts) / DAY);
+        if (ago >= 0 && ago < 28) heatDays[27-ago].count++;
+      });
+      const maxHeat = Math.max.apply(null, heatDays.map(function(d){return d.count;})) || 1;
+      const heatCellsHTML = heatDays.map(function(d) {
+        const a = d.count === 0 ? 0 : Math.min(1, d.count / maxHeat);
+        const bg = d.count === 0 ? 'rgba(0,0,0,0.04)' : 'rgba(0,113,227,' + (0.15 + a * 0.75).toFixed(2) + ')';
+        return '<div class="mgr-heat-cell" style="background:' + bg + '" title="' + d.label + ': ' + d.count + ' answers"></div>';
+      }).join('');
+      const heatmapHTML = '<div class="mgr-analytics-card">' +
+        '<div style="font-size:.85em;font-weight:600;margin-bottom:6px">Activity — Last 28 Days</div>' +
+        '<div class="mgr-heatmap">' + heatCellsHTML + '</div>' +
+        '<div class="mgr-heat-label"><span>' + heatDays[0].label + '</span><span>' + heatDays[13].label + '</span><span>Today</span></div>' +
+        '</div>';
+
+      // Per-staff accuracy sparklines (8 weekly buckets)
+      const WEEK_MS = 7 * DAY;
+      const sparklinesHTML = (function() {
+        const rows = profiles.map(function(p) {
+          const ph = JSON.parse(localStorage.getItem('icc_history_' + p.replace(/\s+/g,'_')) || '[]');
+          const weeks = Array.from({length:8}, function(){return{c:0,t:0};});
+          ph.forEach(function(h) {
+            const wi = Math.floor((now - h.ts) / WEEK_MS);
+            if (wi >= 0 && wi < 8) { weeks[7-wi].t++; if (h.correct) weeks[7-wi].c++; }
+          });
+          const pts = weeks.map(function(w,i){ return {i:i, acc: w.t>=3 ? w.c/w.t : null}; });
+          const valid = pts.filter(function(pt){ return pt.acc !== null; });
+          if (valid.length < 2) return '';
+          const svgPts = valid.map(function(pt){ return Math.round(pt.i/7*120+4)+','+Math.round((1-pt.acc)*36+4); }).join(' ');
+          const circles = valid.map(function(pt){ return '<circle cx="'+Math.round(pt.i/7*120+4)+'" cy="'+Math.round((1-pt.acc)*36+4)+'" r="2.5" fill="var(--accent)"/>'; }).join('');
+          const lastAcc = Math.round(valid[valid.length-1].acc * 100);
+          return '<div class="mgr-sparkline-row">' +
+            '<div class="mgr-sparkline-name">' + p + '</div>' +
+            '<svg width="128" height="44" viewBox="0 0 128 44" style="flex:1;overflow:visible">' +
+            '<polyline points="' + svgPts + '" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
+            circles + '</svg>' +
+            '<div style="font-size:12px;font-weight:700;color:var(--accent);width:34px;text-align:right">' + lastAcc + '%</div>' +
+            '</div>';
+        }).filter(Boolean);
+        if (!rows.length) return '';
+        return '<div class="mgr-analytics-card"><div style="font-size:.85em;font-weight:600;margin-bottom:10px">Accuracy Trend — 8 Weeks</div>' + rows.join('') + '</div>';
+      })();
+
       return `
         <div class="mgr-section-title">Analytics</div>
         <div class="mgr-analytics-card">
@@ -3821,7 +3936,11 @@ function showProductionFallback(idx) {
               </div>`;
             }).join('')}
           </div>
-        </div>`;
+        </div>
+        ${lbHTML}
+        ${heatmapHTML}
+        ${sparklinesHTML}
+        `;
     }
 
     function exportMgrReport() {
@@ -3830,7 +3949,25 @@ function showProductionFallback(idx) {
       const events = getFtEvents();
       const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
-      const staffRows = allStats.map(s => `
+      // Per-mode and per-tier accuracy from history
+      function getBreakdown(profileName) {
+        const key = profileName.replace(/\s+/g,'_');
+        const hist = JSON.parse(localStorage.getItem('icc_history_' + key) || '[]');
+        const modes = { mc:{c:0,t:0}, recall:{c:0,t:0}, production:{c:0,t:0} };
+        const tiers = {1:{c:0,t:0},2:{c:0,t:0},3:{c:0,t:0},4:{c:0,t:0}};
+        hist.forEach(function(h) {
+          if (modes[h.mode]) { modes[h.mode].t++; if (h.correct) modes[h.mode].c++; }
+          const g = GOLFERS[h.memberIdx];
+          if (g && tiers[g.tier]) { tiers[g.tier].t++; if (h.correct) tiers[g.tier].c++; }
+        });
+        const pct = function(m) { return m.t ? Math.round(m.c/m.t*100)+'%' : '—'; };
+        return { mc:pct(modes.mc), recall:pct(modes.recall), production:pct(modes.production),
+          t1:pct(tiers[1]), t2:pct(tiers[2]), t3:pct(tiers[3]), t4:pct(tiers[4]) };
+      }
+
+      const staffRows = allStats.map(s => {
+        const bd = getBreakdown(s.name);
+        return `
         <tr>
           <td><strong>${s.name}</strong></td>
           <td>${s.totalAnswered || 0}</td>
@@ -3842,7 +3979,10 @@ function showProductionFallback(idx) {
             </div>
           </td>
           <td>${s.lastActive || '<span style="color:#aeaeb2;font-style:italic">Never</span>'}</td>
-        </tr>`).join('');
+          <td>${bd.t1}</td><td>${bd.t2}</td><td>${bd.t3}</td><td>${bd.t4}</td>
+          <td>${bd.mc}</td><td>${bd.recall}</td><td>${bd.production}</td>
+        </tr>`;
+      }).join('');
 
       // Per-staff list completion
       const listRows = LISTS.map(l => {
@@ -3900,8 +4040,8 @@ function showProductionFallback(idx) {
 
   <h2>Staff Progress</h2>
   <table>
-    <thead><tr><th>Name</th><th>Total Answers</th><th>Accuracy</th><th>Mastery</th><th>Last Active</th></tr></thead>
-    <tbody>${staffRows || '<tr><td colspan="5" style="color:#86868b;font-style:italic">No staff profiles</td></tr>'}</tbody>
+    <thead><tr><th>Name</th><th>Total Answers</th><th>Accuracy</th><th>Mastery</th><th>Last Active</th><th>T1 Acc</th><th>T2 Acc</th><th>T3 Acc</th><th>T4 Acc</th><th>MC</th><th>Recall</th><th>Production</th></tr></thead>
+    <tbody>${staffRows || '<tr><td colspan="12" style="color:#86868b;font-style:italic">No staff profiles</td></tr>'}</tbody>
   </table>
 
   <h2>List Completion by Staff</h2>
