@@ -1109,7 +1109,7 @@ let productionTimeout = null;
   function saveLeitnerBoxes(b) { localStorage.setItem(pKey(LEITNER_KEY), JSON.stringify(b)); }
   function getBox(idx) { return getLeitnerBoxes()[idx] || 0; }
   function promoteBox(idx) { const b = getLeitnerBoxes(); b[idx] = Math.min((b[idx] || 0) + 1, 5); saveLeitnerBoxes(b); if (window._kSync) window._kSync.leitnerUpdate(idx, b[idx]); }
-  function demoteBox(idx) { const b = getLeitnerBoxes(); b[idx] = Math.max((b[idx] || 0) - 1, 0); saveLeitnerBoxes(b); if (window._kSync) window._kSync.leitnerUpdate(idx, b[idx]); }
+  function demoteBox(idx) { const b = getLeitnerBoxes(); b[idx] = 0; saveLeitnerBoxes(b); if (window._kSync) window._kSync.leitnerUpdate(idx, b[idx]); }
   function isInRecallMode(idx) { return getBox(idx) >= RECALL_BOX_THRESHOLD; }
 
   // ===== SCORING SYSTEM =====
@@ -1541,7 +1541,13 @@ let productionTimeout = null;
         // Record score + history
         recordScore('mc', correct);
         logQuizEntry(idx, 'mc', correct, responseMs);
-        if (sessionActive) trackSessionResult(idx, correct, 'mc', responseMs);
+        if (sessionActive) {
+          if (!correct) {
+            const _reAt = Math.min(sessionCardIndex + 3 + Math.floor(Math.random() * 3), sessionQueue.length);
+            if (!sessionQueue.slice(sessionCardIndex + 1).includes(idx)) sessionQueue.splice(_reAt, 0, idx);
+          }
+          trackSessionResult(idx, correct, 'mc', responseMs);
+        }
 
         // Track accuracy for list quizzes and check auto-advance threshold
         if (currentListIdx !== null) {
@@ -1602,7 +1608,13 @@ let productionTimeout = null;
         scheduleReview(idx, getBox(idx), recallResponseMs, 'recall');
         recordScore('recall', correct);
         logQuizEntry(idx, 'recall', correct, recallResponseMs);
-        if (sessionActive) trackSessionResult(idx, correct, 'recall', recallResponseMs);
+        if (sessionActive) {
+          if (!correct) {
+            const _reAt = Math.min(sessionCardIndex + 3 + Math.floor(Math.random() * 3), sessionQueue.length);
+            if (!sessionQueue.slice(sessionCardIndex + 1).includes(idx)) sessionQueue.splice(_reAt, 0, idx);
+          }
+          trackSessionResult(idx, correct, 'recall', recallResponseMs);
+        }
         showDetails(g, idx);
         updateProgress();
         setTimeout(() => { tapReady = true; document.getElementById('tap-hint').classList.add('show'); }, 300);
@@ -2434,6 +2446,10 @@ if("serviceWorker" in navigator)navigator.serviceWorker.register("/sw.js");
       const boxKey = Math.min(Math.max(box, 0), 5);
       let days = INTERVALS[boxKey][speed];
       if (ext.decayFlagged) days = Math.ceil(days / 2);
+      // Tier weighting: higher tier = seen less often = shorter intervals to accelerate learning
+      const _tierMult = {1: 1.0, 2: 0.85, 3: 0.7, 4: 0.5};
+      const _memberTier = (GOLFERS[memberIdx] && GOLFERS[memberIdx].tier) || 1;
+      days = Math.max(1, Math.round(days * (_tierMult[_memberTier] || 1.0)));
       const next = new Date();
       next.setDate(next.getDate() + days);
       ext.nextReview = next.toDateString();
@@ -2453,6 +2469,23 @@ function buildSessionQueue(tier) {
   const pool = (tier === "all")
     ? GOLFERS.map((_, i) => i)
     : GOLFERS.map((g, i) => g.tier === (typeof tier === "number" ? tier : parseInt(tier)) ? i : -1).filter(i => i >= 0);
+
+  // Forgetting curve decay: demote stale box-5 cards before scheduling
+  const leitnerBoxes = getLeitnerBoxes();
+  let decayChanged = false;
+  pool.forEach(idx => {
+    const box = leitnerBoxes[idx] || 0;
+    if (box < 5) return;
+    const raw = localStorage.getItem(pKey("ext_" + idx));
+    if (!raw) return;
+    const ext = JSON.parse(raw);
+    if (!ext.nextReview) return;
+    const daysSinceDue = Math.floor((new Date() - new Date(ext.nextReview)) / 86400000);
+    if (daysSinceDue >= 90) { leitnerBoxes[idx] = 1; decayChanged = true; }
+    else if (daysSinceDue >= 60) { leitnerBoxes[idx] = 3; decayChanged = true; }
+  });
+  if (decayChanged) saveLeitnerBoxes(leitnerBoxes);
+
   const overdueSlow = [], overdueMed = [], overdueFast = [], dueToday = [], newFaces = [];
   pool.forEach(idx => {
     const raw = localStorage.getItem(pKey("ext_" + idx));
@@ -2472,7 +2505,13 @@ function buildSessionQueue(tier) {
   const shuffle = arr => arr.sort(() => Math.random() - 0.5);
   shuffle(overdueSlow); shuffle(overdueMed); shuffle(overdueFast);
   shuffle(dueToday); shuffle(newFaces);
-  return [...overdueSlow, ...overdueMed, ...overdueFast, ...dueToday, ...newFaces].slice(0, SESSION_SIZE);
+
+  // Guarantee at least 20% of SESSION_SIZE slots go to new faces
+  const minNew = Math.floor(SESSION_SIZE * 0.2);
+  const allReviews = [...overdueSlow, ...overdueMed, ...overdueFast, ...dueToday];
+  const newSlotCount = Math.max(Math.min(minNew, newFaces.length), SESSION_SIZE - allReviews.length);
+  const reviewSlotCount = SESSION_SIZE - newSlotCount;
+  return [...allReviews.slice(0, reviewSlotCount), ...newFaces.slice(0, newSlotCount)];
 }
 function startSession() {
   sessionQueue = buildSessionQueue(quizTier);
@@ -2668,6 +2707,10 @@ function handleProductionResult(idx, correct, ms) {
   } else {
     if (resultEl) { resultEl.className = "production-result incorrect"; resultEl.textContent = "\u2717 Missed"; }
   }
+  if (!correct) {
+    var _reAt = Math.min(sessionCardIndex + 3 + Math.floor(Math.random() * 3), sessionQueue.length);
+    if (!sessionQueue.slice(sessionCardIndex + 1).includes(idx)) sessionQueue.splice(_reAt, 0, idx);
+  }
   trackSessionResult(idx, correct);
   var state = getExtState(idx);
   if (correct && state) {
@@ -2679,7 +2722,7 @@ function handleProductionResult(idx, correct, ms) {
     state.lastReview = Date.now();
     state.reps = (state.reps || 0) + 1;
     saveExtState(idx, state);
-    scheduleReview(idx, state.box);
+    scheduleReview(idx, state.box, ms, 'production');
   }
   setTimeout(function() {
     sessionCardIndex++;
@@ -2804,8 +2847,12 @@ function showProductionFallback(idx) {
         if (typeof demoteBox === "function") demoteBox(_micMemberIdx);
       }
       if (typeof logQuizEntry === "function") logQuizEntry(_micMemberIdx, "production", correct, Math.round(rtMs));
-      if (typeof scheduleReview === "function") scheduleReview(_micMemberIdx, speed);
-      if (typeof trackSessionResult === "function") trackSessionResult(correct);
+      if (typeof scheduleReview === "function") scheduleReview(_micMemberIdx, getBox(_micMemberIdx), Math.round(rtMs), "production");
+      if (!correct && typeof sessionQueue !== "undefined") {
+        var _reAt = Math.min(sessionCardIndex + 3 + Math.floor(Math.random() * 3), sessionQueue.length);
+        if (!sessionQueue.slice(sessionCardIndex + 1).includes(_micMemberIdx)) sessionQueue.splice(_reAt, 0, _micMemberIdx);
+      }
+      if (typeof trackSessionResult === "function") trackSessionResult(_micMemberIdx, correct, "production", Math.round(rtMs));
       if (typeof updateSessionProgress === "function") updateSessionProgress();
       var micBox = document.getElementById("mic-box");
       if (!micBox) return;
