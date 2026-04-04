@@ -162,14 +162,31 @@
     .btn-view { background: rgba(0,0,0,0.05); color: var(--text-primary); border: none; padding: 9px 14px; font-size: 13px; font-weight: 600; border-radius: 10px; cursor: pointer; font-family: inherit; min-height: 44px; }
     .btn-unassign { background: rgba(255,59,48,0.08); color: var(--red); border: none; padding: 9px 14px; font-size: 13px; font-weight: 600; border-radius: 10px; cursor: pointer; font-family: inherit; }
     .btn-unassign:active { opacity: 0.7; }
+    .btn-x { background: none; border: none; color: var(--text-secondary); font-size: 14px; line-height: 1; cursor: pointer; padding: 3px 6px; border-radius: 6px; opacity: 0.45; flex-shrink: 0; font-family: inherit; }
+    .btn-x:hover { opacity: 1; background: rgba(255,59,48,0.08); color: var(--red); }
     .assigned-events-section { padding: 16px 18px 4px; }
     .assigned-events-title { font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 10px; }
-    .assigned-event-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 14px 16px; margin-bottom: 10px; box-shadow: var(--shadow-sm); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .assigned-event-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 14px 16px; margin-bottom: 10px; box-shadow: var(--shadow-sm); }
+    .assigned-event-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
     .assigned-event-info { flex: 1; min-width: 0; }
-    .assigned-event-name { font-size: 15px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .assigned-event-name { font-size: 15px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.2px; }
     .assigned-event-date { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
     .assigned-event-meta { font-size: 12px; color: var(--text-secondary); margin-top: 1px; }
-    .assigned-event-actions { display: flex; gap: 8px; flex-shrink: 0; }
+    .list-share-toggle { font-size: 12px; color: var(--text-secondary); background: none; border: none; cursor: pointer; padding: 8px 0 0; font-family: inherit; display: block; }
+    .list-share-toggle:hover { color: var(--text-primary); }
+    .list-share-section { margin-top: 8px; padding: 11px 12px; background: rgba(0,0,0,0.03); border-radius: 10px; display: none; }
+    .list-share-section.open { display: block; }
+    .list-share-count { font-size: 12px; color: var(--text-secondary); margin-bottom: 7px; }
+    .list-share-url-row { display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.04); border-radius: 9px; padding: 8px 10px; }
+    .list-share-url-text { flex: 1; font-size: 11px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: monospace; }
+    .list-share-copy-btn { background: var(--text-primary); border: none; color: #fff; padding: 6px 12px; border-radius: 7px; font-size: 12px; cursor: pointer; white-space: nowrap; font-family: inherit; font-weight: 600; flex-shrink: 0; }
+    .member-cb { width: 18px; height: 18px; flex-shrink: 0; cursor: pointer; accent-color: var(--text-primary); border-radius: 4px; }
+    .select-all-label { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-secondary); cursor: pointer; margin-left: auto; user-select: none; }
+    .member-action-bar { position: sticky; bottom: 0; background: var(--bg-card); border-top: 1px solid var(--border); padding: 12px 16px; display: none; align-items: center; justify-content: space-between; gap: 10px; box-shadow: 0 -4px 20px rgba(0,0,0,0.08); z-index: 10; }
+    .member-action-bar.visible { display: flex; }
+    .member-action-count { font-size: 13px; color: var(--text-secondary); font-weight: 500; white-space: nowrap; }
+    .member-action-btn { background: rgba(0,0,0,0.06); border: none; color: var(--text-primary); padding: 9px 14px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; white-space: nowrap; }
+    .member-action-btn-primary { background: var(--text-primary); color: #fff; }
 
     /* ===== LIST DETAIL ===== */
     .list-detail { padding: 18px; }
@@ -2058,15 +2075,27 @@ let productionTimeout = null;
         ${assignedLists.map(({ l: list, i: li }) => {
           const hasDate = list.due && list.due !== '2026-12-31';
           const dateStr = hasDate ? new Date(list.due + 'T12:00:00').toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+          const memberLabel = list.ids.length > 0 ? list.ids.length + ' members' : 'Members TBD';
           return `<div class="assigned-event-card">
-            <div class="assigned-event-info">
-              <div class="assigned-event-name">${list.name}</div>
-              ${dateStr ? `<div class="assigned-event-date">${dateStr}</div>` : ''}
-              <div class="assigned-event-meta">${list.ids.length > 0 ? list.ids.length + ' members enrolled' : 'Members TBD'}</div>
+            <div class="assigned-event-header">
+              <div class="assigned-event-info">
+                <div class="assigned-event-name">${list.name}</div>
+                ${dateStr ? `<div class="assigned-event-date">${dateStr}</div>` : ''}
+                <div class="assigned-event-meta">${memberLabel}</div>
+              </div>
+              <button class="btn-x" onclick="unassignListEvent('${list.eventId}','${profileKey}')" title="Remove">&#x2715;</button>
             </div>
-            <div class="assigned-event-actions">
-              <button class="btn-view" onclick="showListDetail(${li})">📖 Study</button>
-              <button class="btn-unassign" onclick="unassignListEvent('${list.eventId}','${profileKey}')">Remove</button>
+            <div class="list-actions" style="margin-top:10px">
+              <button class="btn-view" onclick="showListDetail(${li})">View</button>
+              <button class="btn-test" onclick="testList(${li})">Test</button>
+            </div>
+            <button class="list-share-toggle" onclick="toggleListShare(${li})">Share Test Link &rsaquo;</button>
+            <div class="list-share-section" id="list-share-${li}">
+              <div class="list-share-count"></div>
+              <div class="list-share-url-row">
+                <span class="list-share-url-text"></span>
+                <button class="list-share-copy-btn" onclick="copyListTestLink(this)">Copy Link</button>
+              </div>
             </div>
           </div>`;
         }).join('')}
@@ -2091,6 +2120,14 @@ let productionTimeout = null;
             <button class="btn-view" onclick="event.stopPropagation(); showListDetail(${li})">View</button>
             <button class="btn-test" onclick="event.stopPropagation(); testList(${li})">Test</button>
           </div>
+          <button class="list-share-toggle" onclick="event.stopPropagation(); toggleListShare(${li})">Share Test Link &rsaquo;</button>
+          <div class="list-share-section" id="list-share-${li}">
+            <div class="list-share-count"></div>
+            <div class="list-share-url-row">
+              <span class="list-share-url-text"></span>
+              <button class="list-share-copy-btn" onclick="copyListTestLink(this)">Copy Link</button>
+            </div>
+          </div>
         </div>`;
     }).join('');
 
@@ -2105,11 +2142,15 @@ let productionTimeout = null;
       <div class="list-detail-header">
         <button onclick="listsContainer.classList.remove('hidden'); listDetail.classList.add('hidden');">&larr;</button>
         <h3>${list.name}</h3>
+        <label class="select-all-label">
+          <input type="checkbox" id="select-all-cb" onchange="toggleSelectAll(this)"> All
+        </label>
       </div>
       ${list.ids.map(idx => {
         const g = GOLFERS[idx];
         return `
           <div class="member-list-item" onclick="showProfile(${idx})">
+            <input type="checkbox" class="member-cb" data-idx="${idx}" data-phone="${g.p || ''}" onclick="event.stopPropagation(); updateSelectionBar()">
             <div class="mini-photo">${ftImgSm(g)}</div>
             <div class="info">
               <div class="name">${displayName(g)}</div>
@@ -2118,6 +2159,13 @@ let productionTimeout = null;
             <span class="tier-badge ${tierClass(g.tier)}">T${g.tier}</span>
           </div>`;
       }).join('')}
+      <div class="member-action-bar" id="member-action-bar">
+        <span class="member-action-count" id="member-action-count">0 selected</span>
+        <div style="display:flex;gap:8px;flex-shrink:0">
+          <button class="member-action-btn" onclick="textSelected()">Text</button>
+          <button class="member-action-btn member-action-btn-primary" onclick="emailSelected(${li})">Email Test Link</button>
+        </div>
+      </div>
     `;
   };
 
@@ -2175,6 +2223,96 @@ let productionTimeout = null;
     localStorage.setItem('icc_ft_assign_' + profileKey, JSON.stringify(current.filter(id => id !== eventId)));
     loadFtEventLists();
     renderLists();
+  };
+
+  // ---- List share link helpers ----
+  function genListCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let c = '';
+    for (let i = 0; i < 5; i++) c += chars[Math.floor(Math.random() * chars.length)];
+    return c;
+  }
+
+  window.toggleListShare = function(li) {
+    const section = document.getElementById('list-share-' + li);
+    if (!section) return;
+    if (section.classList.contains('open')) { section.classList.remove('open'); return; }
+    const list = LISTS[li];
+    let code = section.dataset.code;
+    if (!code) {
+      code = genListCode();
+      section.dataset.code = code;
+      localStorage.setItem('icc_lt_' + code, JSON.stringify({ name: list.name, ids: list.ids }));
+    }
+    const url = location.origin + location.pathname + '?lt=' + code;
+    section.querySelector('.list-share-count').textContent = list.ids.length + ' members — share this link to start a quiz on this group';
+    section.querySelector('.list-share-url-text').textContent = url;
+    section.querySelector('.list-share-copy-btn').dataset.url = url;
+    section.classList.add('open');
+  };
+
+  window.copyListTestLink = function(btn) {
+    const url = btn.dataset.url;
+    navigator.clipboard.writeText(url).then(() => {
+      const orig = btn.textContent;
+      btn.textContent = 'Copied!';
+      setTimeout(() => { btn.textContent = orig; }, 1800);
+    });
+  };
+
+  // ---- Member selection helpers ----
+  window.toggleSelectAll = function(cb) {
+    document.querySelectorAll('.member-cb').forEach(el => { el.checked = cb.checked; });
+    updateSelectionBar();
+  };
+
+  window.updateSelectionBar = function() {
+    const checked = document.querySelectorAll('.member-cb:checked');
+    const bar = document.getElementById('member-action-bar');
+    const countEl = document.getElementById('member-action-count');
+    const allCb = document.getElementById('select-all-cb');
+    const total = document.querySelectorAll('.member-cb').length;
+    if (!bar) return;
+    if (checked.length === 0) {
+      bar.classList.remove('visible');
+    } else {
+      bar.classList.add('visible');
+      countEl.textContent = checked.length + ' selected';
+    }
+    if (allCb) allCb.indeterminate = checked.length > 0 && checked.length < total;
+    if (allCb) allCb.checked = checked.length === total;
+  };
+
+  window.textSelected = function() {
+    const checked = [...document.querySelectorAll('.member-cb:checked')];
+    const phones = checked.map(cb => cb.dataset.phone).filter(Boolean);
+    if (!phones.length) { alert('No phone numbers on file for selected members.'); return; }
+    if (phones.length === 1) {
+      const digits = phones[0].replace(/\D/g, '');
+      const e164 = digits.length === 10 ? '+1' + digits : '+' + digits;
+      location.href = 'sms:' + e164;
+    } else {
+      const formatted = phones.map(p => {
+        const d = p.replace(/\D/g, '');
+        return d.length === 10 ? '+1' + d : '+' + d;
+      }).join(',');
+      navigator.clipboard.writeText(formatted).then(() => {
+        alert(phones.length + ' numbers copied to clipboard:\n' + phones.join('\n'));
+      });
+    }
+  };
+
+  window.emailSelected = function(li) {
+    const list = LISTS[li];
+    const code = (() => {
+      const c = genListCode();
+      localStorage.setItem('icc_lt_' + c, JSON.stringify({ name: list.name, ids: list.ids }));
+      return c;
+    })();
+    const url = location.origin + location.pathname + '?lt=' + code;
+    const subject = encodeURIComponent('Practice Quiz: ' + list.name.replace(/[^\w\s]/g, '').trim());
+    const body = encodeURIComponent('Click the link below to start a quiz on ' + list.name.replace(/[^\w\s]/g, '').trim() + ':\n\n' + url);
+    location.href = 'mailto:?subject=' + subject + '&body=' + body;
   };
 
   renderLists();
@@ -2914,6 +3052,47 @@ function showProductionFallback(idx) {
 
           document.getElementById('join-btn').addEventListener('click', doJoin);
           document.getElementById('join-name-input').addEventListener('keydown', e => { if (e.key === 'Enter') doJoin(); });
+          document.getElementById('join-name-input').focus();
+        }
+      }
+
+      // ---- List test link flow (?lt=CODE) ----
+      const ltParam = (urlParams.get('lt') || '').toUpperCase().trim();
+      if (ltParam && !sessionParam) {
+        const ltData = JSON.parse(localStorage.getItem('icc_lt_' + ltParam) || 'null');
+        if (ltData && ltData.ids && ltData.ids.length) {
+          document.getElementById('app').classList.remove('active');
+          document.getElementById('gate').classList.add('hidden');
+          const joinScreen = document.getElementById('join-screen');
+          joinScreen.classList.remove('hidden');
+          const shortName = ltData.name.replace(/[^\w\s]/g, '').trim().toUpperCase().slice(0, 14);
+          document.getElementById('join-session-code').textContent = shortName;
+          function doLtJoin() {
+            const nameRaw = document.getElementById('join-name-input').value.trim();
+            if (!nameRaw) { document.getElementById('join-name-input').focus(); return; }
+            const profileKey = 'lt_' + ltParam + '_' + nameRaw.replace(/\s+/g, '_');
+            const profiles = getProfiles();
+            if (!profiles.includes(profileKey)) { profiles.push(profileKey); saveProfiles(profiles); }
+            setCurrentProfile(profileKey);
+            mcAccuracy = JSON.parse(localStorage.getItem(pKey('icc_mc_accuracy')) || '{}');
+            populateProfileSelect();
+            updateScoresDisplay();
+            updateStreakDisplay();
+            if (typeof loadFtEventLists === 'function') { loadFtEventLists(); renderLists(); }
+            joinScreen.classList.add('hidden');
+            document.getElementById('app').classList.add('active');
+            listQuizIds = ltData.ids.slice();
+            currentListIdx = -1;
+            quizBack.classList.add('show');
+            tabBtns.forEach(b => b.classList.remove('active'));
+            tabPanes.forEach(p => p.classList.remove('active'));
+            tabBtns[0].classList.add('active');
+            document.getElementById('tab-learn').classList.add('active');
+            buildPool();
+            nextQuestion();
+          }
+          document.getElementById('join-btn').addEventListener('click', doLtJoin);
+          document.getElementById('join-name-input').addEventListener('keydown', e => { if (e.key === 'Enter') doLtJoin(); });
           document.getElementById('join-name-input').focus();
         }
       }
