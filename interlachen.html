@@ -1717,12 +1717,22 @@ let productionTimeout = null;
     return { match: false, confidence: 0 };
   }
 
+  function speakMemberName(g) {
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const utt = new SpeechSynthesisUtterance(g.first + ' ' + g.last);
+    utt.lang = 'en-US';
+    utt.rate = 0.9;
+    window.speechSynthesis.speak(utt);
+  }
+
   function stopProduction() {
     _prodActive = false;
     if (_prodRecognition) {
       try { _prodRecognition.stop(); } catch(e) {}
       _prodRecognition = null;
     }
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
   }
 
   function renderProduction(g, idx) {
@@ -1768,8 +1778,9 @@ let productionTimeout = null;
       confFill.style.width = Math.round(confidence * 100) + '%';
       skipBtn.textContent = 'Next →';
       if (correct) promoteBox(idx); else demoteBox(idx);
-      recordScore('recall', correct);
-      logQuizEntry(idx, 'recall', correct, Date.now() - cardStart);
+      recordScore('production', correct);
+      logQuizEntry(idx, 'production', correct, Date.now() - cardStart);
+      speakMemberName(g);
       showDetails(g, idx);
       updateProgress();
       answered = true;
@@ -1792,8 +1803,9 @@ let productionTimeout = null;
       resolved = true;
       stopProduction();
       demoteBox(idx);
-      recordScore('recall', false);
-      logQuizEntry(idx, 'recall', false, Date.now() - cardStart);
+      recordScore('production', false);
+      logQuizEntry(idx, 'production', false, Date.now() - cardStart);
+      speakMemberName(g);
       showDetails(g, idx);
       updateProgress();
       answered = true;
