@@ -1989,8 +1989,8 @@ let productionTimeout = null;
         if (idx >= 0 && !ids.includes(idx)) ids.push(idx);
       });
       // Parse date from event (fallback to far future so it shows as "ok")
-      const due = ev.date ? ev.date.replace(/[^\d-]/g, '-').substring(0, 10) || '2026-12-31' : '2026-12-31';
-      LISTS.push({ name: '\u26F3 ' + ev.name, ids, due, source: 'foretees', eventId: id });
+      const due = parseFtDate(ev.date);
+      LISTS.unshift({ name: '\u26F3 ' + ev.name, ids, due, source: 'foretees', eventId: id });
     });
   }
   loadFtEventLists();
