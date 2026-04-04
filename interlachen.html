@@ -884,23 +884,25 @@
   window._camFallback   = function(el) { el.parentNode.innerHTML = CAM_SVG; };
   window._camFallbackSm = function(el) { el.parentNode.innerHTML = CAM_SM; };
   window._camFallbackFT = function(el) {
+    var p = el.parentNode; if (!p) return;
     var ft = (el.src.match(/FT([^.]+)\.jpg/) || [])[1];
-    el.parentNode.innerHTML = CAM_SVG;
+    p.innerHTML = CAM_SVG;
     if (ft) {
-      el.parentNode.dataset.ft = ft;
-      el.parentNode.style.cursor = 'pointer';
-      el.parentNode.title = 'Tap to add photo';
-      el.parentNode.onclick = function() { capturePhoto(ft); };
+      p.dataset.ft = ft;
+      p.style.cursor = 'pointer';
+      p.title = 'Tap to add photo';
+      p.onclick = function() { capturePhoto(ft); };
     }
   };
   window._camFallbackFTSm = function(el) {
+    var p = el.parentNode; if (!p) return;
     var ft = (el.src.match(/FT([^.]+)\.jpg/) || [])[1];
-    el.parentNode.innerHTML = CAM_SM;
+    p.innerHTML = CAM_SM;
     if (ft) {
-      el.parentNode.dataset.ft = ft;
-      el.parentNode.style.cursor = 'pointer';
-      el.parentNode.title = 'Tap to add photo';
-      el.parentNode.onclick = function() { capturePhoto(ft); };
+      p.dataset.ft = ft;
+      p.style.cursor = 'pointer';
+      p.title = 'Tap to add photo';
+      p.onclick = function() { capturePhoto(ft); };
     }
   };
   function ftPhotoUrl(g) {
