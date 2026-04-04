@@ -11,6 +11,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
   <meta name="theme-color" content="#f5f5f7">
   <meta name="mobile-web-app-capable" content="yes">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
       /* Apple Design System */
@@ -588,6 +589,11 @@
     .notif-bell-btn { position: relative; padding: 5px 7px; min-height: 44px; min-width: 44px; background: rgba(0,0,0,0.05); border: none; border-radius: 8px; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; justify-content: center; }
     .notif-badge { position: absolute; top: -4px; right: -4px; background: var(--red); color: #fff; border-radius: 50%; width: 16px; height: 16px; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center; line-height: 1; }
     .notif-badge.hidden { display: none; }
+    .cloud-sync-btn { display: flex; align-items: center; gap: 5px; padding: 5px 9px; min-height: 44px; background: rgba(0,0,0,0.05); border: none; border-radius: 8px; cursor: default; font-size: 11px; color: var(--text-secondary); font-weight: 500; flex-shrink: 0; }
+    .cloud-sync-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--gray-400); transition: background 0.4s; flex-shrink: 0; }
+    .cloud-sync-dot.connected { background: var(--green); }
+    .cloud-sync-dot.syncing { background: var(--orange); animation: pulse 1s infinite; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
 
     /* ===== NOTIFICATION MODAL ===== */
     .notif-modal-card { background: var(--bg-card); border-radius: 16px; width: 100%; max-width: 360px; max-height: 75vh; display: flex; flex-direction: column; box-shadow: var(--shadow-lg); }
@@ -657,6 +663,10 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
           <span class="notif-badge hidden" id="notif-badge">0</span>
         </button>
+        <div class="cloud-sync-btn" id="cloud-sync-btn" title="Cloud sync status">
+          <span class="cloud-sync-dot" id="cloud-sync-dot"></span>
+          <span id="cloud-sync-label">Local</span>
+        </div>
       </div>
     </div>
     <div class="tab-bar">
@@ -1095,8 +1105,8 @@ let productionTimeout = null;
   function getLeitnerBoxes() { return JSON.parse(localStorage.getItem(pKey(LEITNER_KEY)) || '{}'); }
   function saveLeitnerBoxes(b) { localStorage.setItem(pKey(LEITNER_KEY), JSON.stringify(b)); }
   function getBox(idx) { return getLeitnerBoxes()[idx] || 0; }
-  function promoteBox(idx) { const b = getLeitnerBoxes(); b[idx] = Math.min((b[idx] || 0) + 1, 5); saveLeitnerBoxes(b); }
-  function demoteBox(idx) { const b = getLeitnerBoxes(); b[idx] = Math.max((b[idx] || 0) - 1, 0); saveLeitnerBoxes(b); }
+  function promoteBox(idx) { const b = getLeitnerBoxes(); b[idx] = Math.min((b[idx] || 0) + 1, 5); saveLeitnerBoxes(b); if (window._kSync) window._kSync.leitnerUpdate(idx, b[idx]); }
+  function demoteBox(idx) { const b = getLeitnerBoxes(); b[idx] = Math.max((b[idx] || 0) - 1, 0); saveLeitnerBoxes(b); if (window._kSync) window._kSync.leitnerUpdate(idx, b[idx]); }
   function isInRecallMode(idx) { return getBox(idx) >= RECALL_BOX_THRESHOLD; }
 
   // ===== SCORING SYSTEM =====
@@ -1159,6 +1169,7 @@ let productionTimeout = null;
     if (hist.length > 500) hist.length = 500;
     localStorage.setItem(pKey(HIST_KEY), JSON.stringify(hist));
     touchStreak();
+    if (window._kSync) window._kSync.quizAnswer(memberIdx, mode, correct, Math.round(responseTimeMs));
   }
   function renderHistoryModal() {
     const hist = getHistory();
@@ -3121,6 +3132,7 @@ function showProductionFallback(idx) {
         if (typeof addNotification === 'function' && ev) {
           addNotification('New event list assigned', `${staffName} — ${ev.name}`);
         }
+        if (window._kSync) window._kSync.assignment(eventId, key, 'assign');
       }
       sel.value = '';
       renderMgrDashboard();
@@ -3130,6 +3142,7 @@ function showProductionFallback(idx) {
 
     window.unassignFtEvent = function(eventId, key) {
       setFtAssign(key, getFtAssign(key).filter(id => id !== eventId));
+      if (window._kSync) window._kSync.assignment(eventId, key, 'unassign');
       renderMgrDashboard();
       // Refresh Lists tab so removed event disappears immediately
       if (typeof loadFtEventLists === 'function') { loadFtEventLists(); renderLists(); }
@@ -3430,6 +3443,158 @@ function showProductionFallback(idx) {
     window.renderMgrDashboard = renderMgrDashboard;
     renderMgrDashboard();
   })();
+</script>
+
+<!-- ===== SUPABASE SYNC LAYER ===================================================
+  localStorage remains the primary fast store.
+  Supabase is the durable backup — the app works fully offline and syncs when online.
+  All sync calls are fire-and-forget (errors are swallowed silently).
+============================================================================== -->
+<script>
+(function() {
+  'use strict';
+
+  const CLUB_SLUG   = 'interlachen';
+  const SID_PFX     = 'icc_supabase_sid_'; // localStorage key prefix for staff UUIDs
+
+  let _staffId = null;  // Supabase UUID for current profile
+  let _connected = false;
+
+  // ── Indicator helpers ───────────────────────────────────────────────────────
+  function setIndicator(state) {
+    // state: 'local' | 'syncing' | 'connected'
+    _connected = (state === 'connected');
+    const dot   = document.getElementById('cloud-sync-dot');
+    const label = document.getElementById('cloud-sync-label');
+    if (!dot || !label) return;
+    dot.className = 'cloud-sync-dot' + (state === 'connected' ? ' connected' : state === 'syncing' ? ' syncing' : '');
+    label.textContent = state === 'connected' ? 'Cloud' : state === 'syncing' ? 'Syncing' : 'Local';
+  }
+
+  // ── Resolve staff UUID for current profile ──────────────────────────────────
+  async function resolveStaffId(profileName) {
+    const key = SID_PFX + profileName.replace(/\s+/g, '_');
+    const cached = localStorage.getItem(key);
+    if (cached) { _staffId = cached; return cached; }
+
+    try {
+      const res = await fetch('/api/staff?club_slug=' + CLUB_SLUG + '&name=' + encodeURIComponent(profileName));
+      if (!res.ok) return null;
+      const data = await res.json();
+      if (data.id) {
+        _staffId = data.id;
+        localStorage.setItem(key, _staffId);
+        return _staffId;
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  // ── Init ────────────────────────────────────────────────────────────────────
+  async function init() {
+    try {
+      const res = await fetch('/api/config');
+      if (!res.ok) return;
+      const cfg = await res.json();
+      if (!cfg.configured) return; // env vars not set yet — local-only mode
+
+      setIndicator('syncing');
+      const profile = (typeof getCurrentProfile === 'function') ? getCurrentProfile() : 'Guest';
+      await resolveStaffId(profile);
+      setIndicator('connected');
+    } catch (_) {
+      setIndicator('local');
+    }
+  }
+
+  // Re-resolve when the profile selector changes
+  document.addEventListener('change', function(e) {
+    if (e.target && e.target.id === 'profile-select') {
+      _staffId = null;
+      setIndicator('syncing');
+      const name = e.target.value || 'Guest';
+      resolveStaffId(name).then(function(id) {
+        setIndicator(id ? 'connected' : 'local');
+      });
+    }
+  });
+
+  // ── Public sync API (called from hooks in the main app code) ────────────────
+  window._kSync = {
+
+    // Called after every quiz answer
+    quizAnswer: function(memberIdx, mode, correct, responseMs) {
+      if (!_staffId) return;
+      fetch('/api/progress', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ staff_id: _staffId, club_slug: CLUB_SLUG, member_idx: memberIdx, mode: mode, correct: correct, response_ms: responseMs })
+      }).catch(function() {});
+    },
+
+    // Called after every Leitner box update
+    leitnerUpdate: function(memberIdx, box) {
+      if (!_staffId) return;
+      fetch('/api/leitner', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ staff_id: _staffId, club_slug: CLUB_SLUG, member_idx: memberIdx, box: box })
+      }).catch(function() {});
+    },
+
+    // Called after event assign/unassign
+    // action: 'assign' | 'unassign'
+    // staffKey: staffName.replace(/\s+/g,'_')
+    assignment: function(eventId, staffKey, action) {
+      if (!_connected) return;
+      const staffName = staffKey.replace(/_/g, ' ');
+      resolveStaffId(staffName).then(function(sid) {
+        if (!sid) return;
+        if (action === 'assign') {
+          fetch('/api/assignments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ club_slug: CLUB_SLUG, event_id: eventId, staff_id: sid })
+          }).catch(function() {});
+        } else {
+          fetch('/api/assignments', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ club_slug: CLUB_SLUG, event_id: eventId, staff_id: sid })
+          }).catch(function() {});
+        }
+      });
+    },
+
+    // Bulk-migrate all localStorage data for a profile to Supabase
+    migrateProfile: function(profileName) {
+      const key = profileName.replace(/\s+/g, '_');
+      const leitner    = JSON.parse(localStorage.getItem('icc_leitner_' + key) || '{}');
+      const history    = JSON.parse(localStorage.getItem('icc_history_' + key) || '[]');
+      const assignments = {};
+      // Collect all assignment keys
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith('icc_ft_assign_')) {
+          const sk = k.replace('icc_ft_assign_', '');
+          assignments[sk] = JSON.parse(localStorage.getItem(k) || '[]');
+        }
+      }
+      return fetch('/api/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ club_slug: CLUB_SLUG, staff_name: profileName, leitner: leitner, history: history, assignments: assignments })
+      }).then(function(r) { return r.json(); });
+    }
+  };
+
+  // Run init after DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
 </script>
 </body>
   </html>

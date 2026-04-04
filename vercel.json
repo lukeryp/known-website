@@ -4,6 +4,12 @@
     { "src": "/forge", "dest": "/forge.html" }
   ],
   "functions": {
-    "api/events.js": { "maxDuration": 15 }
+    "api/events.js":      { "maxDuration": 15 },
+    "api/config.js":      { "maxDuration": 5  },
+    "api/staff.js":       { "maxDuration": 10 },
+    "api/progress.js":    { "maxDuration": 10 },
+    "api/leitner.js":     { "maxDuration": 10 },
+    "api/assignments.js": { "maxDuration": 10 },
+    "api/sync.js":        { "maxDuration": 30 }
   }
 }
