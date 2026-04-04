@@ -1717,12 +1717,22 @@ let productionTimeout = null;
     return { match: false, confidence: 0 };
   }
 
+  function speakMemberName(g) {
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const utt = new SpeechSynthesisUtterance(g.first + ' ' + g.last);
+    utt.lang = 'en-US';
+    utt.rate = 0.9;
+    window.speechSynthesis.speak(utt);
+  }
+
   function stopProduction() {
     _prodActive = false;
     if (_prodRecognition) {
       try { _prodRecognition.stop(); } catch(e) {}
       _prodRecognition = null;
     }
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
   }
 
   function renderProduction(g, idx) {
@@ -1768,10 +1778,11 @@ let productionTimeout = null;
       confFill.style.width = Math.round(confidence * 100) + '%';
       skipBtn.textContent = 'Next →';
       if (correct) promoteBox(idx); else demoteBox(idx);
-      scheduleReview(idx, getBox(idx), Date.now() - cardStart, 'recall');
-      recordScore('recall', correct);
-      logQuizEntry(idx, 'recall', correct, Date.now() - cardStart);
-      if (sessionActive) trackSessionResult(idx, correct, 'recall', Date.now() - cardStart);
+      scheduleReview(idx, getBox(idx), Date.now() - cardStart, 'production');
+      recordScore('production', correct);
+      logQuizEntry(idx, 'production', correct, Date.now() - cardStart);
+      if (sessionActive) trackSessionResult(idx, correct, 'production', Date.now() - cardStart);
+      speakMemberName(g);
       showDetails(g, idx);
       updateProgress();
       answered = true;
@@ -1794,10 +1805,11 @@ let productionTimeout = null;
       resolved = true;
       stopProduction();
       demoteBox(idx);
-      scheduleReview(idx, getBox(idx), Date.now() - cardStart, 'recall');
-      recordScore('recall', false);
-      logQuizEntry(idx, 'recall', false, Date.now() - cardStart);
-      if (sessionActive) trackSessionResult(idx, false, 'recall', Date.now() - cardStart);
+      scheduleReview(idx, getBox(idx), Date.now() - cardStart, 'production');
+      recordScore('production', false);
+      logQuizEntry(idx, 'production', false, Date.now() - cardStart);
+      if (sessionActive) trackSessionResult(idx, false, 'production', Date.now() - cardStart);
+      speakMemberName(g);
       showDetails(g, idx);
       updateProgress();
       answered = true;
@@ -1870,8 +1882,11 @@ let productionTimeout = null;
         if (event.error === 'no-speech' || event.error === 'aborted') {
           if (_prodActive && !resolved) setTimeout(startListening, 200);
         } else {
-          statusEl.textContent = 'Mic: ' + event.error;
+          _prodActive = false; // prevent onend from restarting on fatal errors
+          statusEl.textContent = event.error === 'not-allowed' ? 'Mic access denied' : 'Mic: ' + event.error;
           dotEl.classList.remove('pulse');
+          micEl.classList.remove('listening');
+          skipBtn.textContent = 'Next →';
         }
       };
 
@@ -1879,7 +1894,11 @@ let productionTimeout = null;
         if (_prodActive && !resolved) setTimeout(startListening, 150);
       };
 
-      try { sr.start(); } catch(e) {}
+      try { sr.start(); } catch(e) {
+        _prodActive = false;
+        statusEl.textContent = 'Mic unavailable';
+        dotEl.classList.remove('pulse');
+      }
     }
 
     startListening();
