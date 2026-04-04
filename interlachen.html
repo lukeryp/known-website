@@ -268,10 +268,59 @@
     .prod-conf-bar { width: 120px; height: 3px; background: rgba(0,0,0,0.08); border-radius: 2px; margin: 4px auto 12px; overflow: hidden; }
     .prod-conf-bar .fill { height: 100%; background: var(--green); border-radius: 2px; transition: width 0.3s; }
     .production-skip { margin-top: 10px; padding: 10px 28px; font-size: 13px; font-weight: 500; background: rgba(0,0,0,0.04); border: 1px solid transparent; border-radius: 20px; color: var(--text-secondary); cursor: pointer; font-family: inherit; }
+    /* ===== 480px: Phone adjustments ===== */
+    @media (max-width: 480px) {
+      .tier-filters button { font-size: 13px; padding: 6px 14px; }
+      .header .title h2 { font-size: 14px; }
+      .mode-toggle button { font-size: 10px; padding: 6px 4px; }
+    }
+
+    /* ===== Mobile tab bar (< 768px): fixed at bottom ===== */
+    @media (max-width: 767px) {
+      .tab-bar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 200;
+        border-top: 1px solid var(--border);
+        border-bottom: none;
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+        box-shadow: 0 -1px 0 rgba(0,0,0,0.06), 0 -4px 12px rgba(0,0,0,0.04);
+      }
+      .tab-content { padding-bottom: 64px; }
+    }
+
+    /* ===== 600px: Small tablet ===== */
     @media (min-width: 600px) {
       .quiz-card { max-width: 460px; }
       .member-photo { width: 220px; height: 220px; }
       .choice-btn { font-size: 16px; padding: 17px; }
+    }
+
+    /* ===== 768px: Tablet ===== */
+    @media (min-width: 768px) {
+      .lists-container { display: grid; grid-template-columns: repeat(2, 1fr); align-items: start; }
+      .staff-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+      .mgr-staff-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+      .mgr-events-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+      .member-photo { width: 240px; height: 240px; }
+    }
+
+    /* ===== 1024px: Desktop ===== */
+    @media (min-width: 1024px) {
+      .lists-container { grid-template-columns: repeat(3, 1fr); max-width: 900px; margin: 0 auto; }
+      .staff-container { grid-template-columns: repeat(3, 1fr); max-width: 900px; margin: 0 auto; }
+      .mgr-staff-grid { grid-template-columns: repeat(3, 1fr); }
+      .mgr-events-grid { grid-template-columns: repeat(3, 1fr); }
+      .mgr-dashboard { max-width: 900px; margin: 0 auto; }
+      .learn-controls { max-width: 900px; margin-left: auto; margin-right: auto; }
+      .quiz-area { align-self: center; width: 100%; max-width: 900px; }
+      .quiz-card { max-width: 500px; }
+      .member-photo { width: 260px; height: 260px; }
+      .db-controls { max-width: 900px; margin-left: auto; margin-right: auto; }
+      .db-list { max-width: 900px; margin-left: auto; margin-right: auto; }
+      .scores-row { max-width: 900px; margin-left: auto; margin-right: auto; }
     }
 
     /* ===== USER PROFILE SELECTOR ===== */
@@ -1217,6 +1266,42 @@ let productionTimeout = null;
         new Date(n.time).toISOString().split('T')[0] === today
       );
       if (!alreadyToday) addNotification(title, '');
+    });
+  })();
+
+  // Daily review reminders — once per day per profile
+  (function checkDailyReview() {
+    const today = new Date().toISOString().split('T')[0];
+    const dailyKey = 'icc_daily_check_' + today;
+    if (localStorage.getItem(dailyKey)) return;
+    localStorage.setItem(dailyKey, '1');
+
+    const DAY_MS = 86400000;
+    const profiles = getProfiles().filter(p => p !== 'Guest');
+    profiles.forEach(p => {
+      const key = p.replace(/\s+/g, '_');
+      const lastActive = localStorage.getItem('icc_last_active_' + key);
+      const leitner = JSON.parse(localStorage.getItem('icc_leitner_' + key) || '{}');
+      const dueItems = Object.values(leitner).filter(v => v > 0 && v < 5).length;
+
+      if (lastActive) {
+        const lastDate = new Date(lastActive);
+        const msSince = Date.now() - lastDate.getTime();
+        if (msSince >= DAY_MS) {
+          const daysSince = Math.floor(msSince / DAY_MS);
+          addNotification(
+            `📚 ${p} hasn't studied in ${daysSince} day${daysSince !== 1 ? 's' : ''}`,
+            'Open the app and keep your streak going!'
+          );
+        }
+      }
+
+      if (dueItems > 0) {
+        addNotification(
+          `🔄 ${p} has ${dueItems} member${dueItems !== 1 ? 's' : ''} due for review`,
+          'Keep those Leitner boxes moving!'
+        );
+      }
     });
   })();
 
@@ -3028,6 +3113,7 @@ function showProductionFallback(idx) {
           <div class="mgr-sync-status">${syncLabel}${events.length ? ' · ' + events.length + ' events' : ''}</div>
         </div>
         ${events.length === 0 ? `<div class="mgr-no-events">No events loaded yet. Click "Sync Events" to pull instruction events from ForeTees.</div>` : ''}
+        <div class="mgr-events-grid">
         ${events.map(ev => {
           const assignedStaff = profiles.filter(p => getFtAssign(p.replace(/\s+/g,'_')).includes(ev.id));
           const metaParts = [ev.date, (ev.time && ev.time !== '1:00 AM') ? ev.time : null, ev.instructor, ev.members?.length ? ev.members.length + ' enrolled' : (ev.slots || '')].filter(Boolean);
@@ -3062,6 +3148,7 @@ function showProductionFallback(idx) {
             </div>`}
           </div>`;
         }).join('')}
+        </div>
       `;
     }
 
@@ -3077,13 +3164,17 @@ function showProductionFallback(idx) {
       document.getElementById('mgr-dashboard').innerHTML = `
         <div class="mgr-header">
           <h3>Manager Dashboard</h3>
-          <button class="mgr-refresh-btn" onclick="document.getElementById('mgr-dashboard').innerHTML='';renderMgrDashboard()">Refresh</button>
+          <div style="display:flex;gap:8px">
+            <button class="mgr-refresh-btn" onclick="document.getElementById('mgr-dashboard').innerHTML='';renderMgrDashboard()">Refresh</button>
+            <button class="mgr-refresh-btn" onclick="exportMgrReport()" style="background:rgba(0,113,227,0.08);color:var(--accent)">Export Report</button>
+          </div>
         </div>
         <div class="mgr-summary-row">
           <div class="mgr-stat"><div class="val">${activeCount}/${profiles.length}</div><div class="lbl">Active Staff</div></div>
           <div class="mgr-stat"><div class="val">${avgMastery}%</div><div class="lbl">Avg Mastery</div></div>
           <div class="mgr-stat"><div class="val">${topPct}%</div><div class="lbl">Top Score</div></div>
         </div>
+        <div class="mgr-staff-grid">
         ${allStats.map(s => `
           <div class="mgr-staff-card">
             <div class="mgr-staff-name">${s.name}</div>
@@ -3105,6 +3196,7 @@ function showProductionFallback(idx) {
             </div>
             <div class="mgr-last-active">${s.totalAnswered} answers total${s.lastActive ? ' · Last active ' + s.lastActive : ''}</div>`}
           </div>`).join('')}
+        </div>
         ${profiles.length === 0 ? '<div class="mgr-no-data" style="text-align:center;padding:32px">No staff profiles found.<br>Staff must select their name from the dropdown to appear here.</div>' : ''}
         ${buildEventSectionHTML(profiles)}
         ${buildAnalyticsHTML(profiles)}
@@ -3193,6 +3285,93 @@ function showProductionFallback(idx) {
             }).join('')}
           </div>
         </div>`;
+    }
+
+    function exportMgrReport() {
+      const profiles = getProfiles().filter(p => p !== 'Guest');
+      const allStats = profiles.map(p => ({ name: p, ...getProfileStats(p) }));
+      const events = getFtEvents();
+      const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+      const staffRows = allStats.map(s => `
+        <tr>
+          <td>${s.name}</td>
+          <td>${s.totalAnswered}</td>
+          <td>${s.accPct !== null ? s.accPct + '%' : '—'}</td>
+          <td>${s.masteryPct}%</td>
+          <td>${s.lastActive || '—'}</td>
+        </tr>`).join('');
+
+      const listRows = LISTS.map(l => {
+        const days = typeof daysUntil === 'function' ? daysUntil(l.due) : null;
+        const status = !l.due || l.due === '2026-12-31' ? '—'
+          : days < 0 ? `<span style="color:#ff3b30;font-weight:600">Overdue by ${Math.abs(days)}d</span>`
+          : days === 0 ? '<span style="color:#ff9f0a;font-weight:600">Due today</span>'
+          : `<span style="color:#34c759">On track (${days}d left)</span>`;
+        return `<tr><td>${l.name}</td><td>${l.due && l.due !== '2026-12-31' ? l.due : '—'}</td><td>${status}</td></tr>`;
+      }).join('');
+
+      const eventRows = events.map(ev => {
+        const assigned = profiles.filter(p => getFtAssign(p.replace(/\s+/g,'_')).includes(ev.id));
+        return `<tr><td>${ev.name}</td><td>${ev.date || '—'}</td><td>${assigned.length ? assigned.join(', ') : '<em style="color:#86868b">Unassigned</em>'}</td></tr>`;
+      }).join('');
+
+      const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+<title>Manager Report — Interlachen CC</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif; background: #f5f5f7; color: #1d1d1f; margin: 0; padding: 32px; -webkit-font-smoothing: antialiased; }
+  .report { max-width: 860px; margin: 0 auto; background: #fff; border-radius: 18px; padding: 40px 48px; box-shadow: 0 2px 20px rgba(0,0,0,0.08); }
+  .report-header { border-bottom: 2px solid #1d1d1f; padding-bottom: 20px; margin-bottom: 32px; display: flex; justify-content: space-between; align-items: flex-end; }
+  .report-header h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; margin: 0; }
+  .report-header .meta { font-size: 13px; color: #6e6e73; text-align: right; line-height: 1.6; }
+  h2 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: #6e6e73; margin: 32px 0 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #6e6e73; padding: 8px 12px; border-bottom: 1px solid #e5e5ea; }
+  td { padding: 11px 12px; border-bottom: 1px solid #f2f2f7; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  .print-btn { display: inline-block; margin-top: 32px; padding: 12px 28px; background: #1d1d1f; color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  @media print {
+    body { background: #fff; padding: 0; }
+    .report { box-shadow: none; border-radius: 0; padding: 20px 24px; }
+    .print-btn { display: none; }
+    h2 { margin-top: 24px; }
+  }
+</style>
+</head><body>
+<div class="report">
+  <div class="report-header">
+    <div>
+      <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#6e6e73;margin-bottom:6px">Interlachen Country Club</div>
+      <h1>Staff Progress Report</h1>
+    </div>
+    <div class="meta">${today}<br>${profiles.length} staff · ${GOLFERS.length} members</div>
+  </div>
+
+  <h2>Staff Progress</h2>
+  <table>
+    <thead><tr><th>Name</th><th>Total Answers</th><th>Accuracy</th><th>Mastery</th><th>Last Active</th></tr></thead>
+    <tbody>${staffRows || '<tr><td colspan="5" style="color:#86868b;font-style:italic">No staff profiles</td></tr>'}</tbody>
+  </table>
+
+  <h2>List Status</h2>
+  <table>
+    <thead><tr><th>List Name</th><th>Deadline</th><th>Status</th></tr></thead>
+    <tbody>${listRows || '<tr><td colspan="3" style="color:#86868b;font-style:italic">No lists</td></tr>'}</tbody>
+  </table>
+
+  ${events.length ? `
+  <h2>ForeTees Event Assignments</h2>
+  <table>
+    <thead><tr><th>Event</th><th>Date</th><th>Assigned Staff</th></tr></thead>
+    <tbody>${eventRows}</tbody>
+  </table>` : ''}
+
+  <button class="print-btn" onclick="window.print()">Print Report</button>
+</div>
+</body></html>`;
+
+      const w = window.open('', '_blank');
+      if (w) { w.document.write(html); w.document.close(); }
     }
 
     window.renderMgrDashboard = renderMgrDashboard;
