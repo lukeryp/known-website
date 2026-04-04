@@ -320,7 +320,8 @@
       .header { grid-area: header; }
       .tab-bar {
         grid-area: tabs;
-        position: static;
+        position: relative;
+        z-index: 1;
         flex-direction: column;
         border-bottom: none;
         border-right: 1px solid var(--border);
@@ -675,7 +676,7 @@
       <button data-tab="staff">Staff</button>
       <button data-tab="database">Directory</button>
       <button data-tab="session">Session</button>
-      <button data-tab="manager" id="mgr-tab-btn" style="display:none">Manager</button>
+      <button data-tab="manager" id="mgr-tab-btn" style="display:none" onclick="(function(b){document.querySelectorAll('.tab-bar button').forEach(function(x){x.classList.remove('active');});document.querySelectorAll('.tab-pane').forEach(function(x){x.classList.remove('active');});b.classList.add('active');document.getElementById('tab-manager').classList.add('active');if(window.renderMgrDashboard)window.renderMgrDashboard();})(this)">Manager</button>
     </div>
     <div class="tab-content">
       <!-- LEARN TAB -->
@@ -1021,6 +1022,8 @@ let productionTimeout = null;
       if (localStorage.getItem(mcKey)) localStorage.setItem('icc_mc_accuracy_Dr._Luke', localStorage.getItem(mcKey));
       if (localStorage.getItem(CURRENT_PROFILE_KEY) === 'Dr.') localStorage.setItem(CURRENT_PROFILE_KEY, 'Dr. Luke');
     }
+    // Deduplicate in case migration produced two entries (e.g. "Dr. Luke" from STAFF seed + migration)
+    profiles = [...new Set(profiles)];
     saveProfiles(profiles);
     const lk = 'icc_leitner';
     if (localStorage.getItem(lk) && !localStorage.getItem(lk + '_Guest')) {
@@ -1301,8 +1304,12 @@ let productionTimeout = null;
   });
   updateNotifBadge();
 
-  // Mark all pre-existing notifications as read so the badge only shows fresh activity
-  saveNotifications(getNotifications().map(n => ({...n, read: true})));
+  // Expire notifications older than 14 days, then mark remaining pre-existing ones as read
+  (function expireOldNotifs() {
+    const cutoff = Date.now() - 14 * 24 * 60 * 60 * 1000;
+    const fresh = getNotifications().filter(n => n.time > cutoff);
+    saveNotifications(fresh.map(n => ({...n, read: true})));
+  })();
   updateNotifBadge();
 
   // Notify about overdue lists on app load (once per day per list)
@@ -3232,7 +3239,7 @@ function showProductionFallback(idx) {
           <div class="mgr-stat"><div class="val">${avgMastery}%</div><div class="lbl">Avg Mastery</div></div>
           <div class="mgr-stat"><div class="val">${topPct}%</div><div class="lbl">Top Score</div></div>
         </div>
-        <div class="mgr-staff-grid">
+        <div class="mgr-staff-grid" id="mgr-staff-grid">
         ${allStats.map(s => `
           <div class="mgr-staff-card">
             <div class="mgr-staff-name">${s.name}</div>
@@ -3259,6 +3266,80 @@ function showProductionFallback(idx) {
         ${buildEventSectionHTML(profiles)}
         ${buildAnalyticsHTML(profiles)}
       `;
+      // Augment with Supabase data asynchronously (cross-device activity tracking)
+      augmentMgrWithSupabase(profiles, allStats);
+    }
+
+    async function augmentMgrWithSupabase(profiles, localStats) {
+      try {
+        const cfg = await fetch('/api/config').then(r => r.json()).catch(() => ({}));
+        if (!cfg.configured) return;
+
+        const staffList = await fetch('/api/staff?club_slug=interlachen').then(r => r.json()).catch(() => []);
+        if (!Array.isArray(staffList) || !staffList.length) return;
+        const staffMap = {};
+        staffList.forEach(function(s) { if (s.id && s.name) staffMap[s.name] = s.id; });
+
+        const enriched = await Promise.all(profiles.map(async function(profileName) {
+          const sid = staffMap[profileName] || localStorage.getItem('icc_supabase_sid_' + profileName.replace(/\s+/g, '_'));
+          if (!sid) return null;
+          const [progress, leitner] = await Promise.all([
+            fetch('/api/progress?staff_id=' + sid).then(r => r.json()).catch(() => []),
+            fetch('/api/leitner?staff_id=' + sid).then(r => r.json()).catch(() => [])
+          ]);
+          if (!Array.isArray(progress) || !Array.isArray(leitner)) return null;
+          const totalAnswered = progress.length;
+          const local = localStats.find(function(x) { return x.name === profileName; });
+          if (totalAnswered <= (local ? local.totalAnswered : 0)) return null;
+          const correctCount = progress.filter(function(p) { return p.correct; }).length;
+          const accPct = totalAnswered > 0 ? Math.round(correctCount / totalAnswered * 100) : null;
+          const lastTs = Math.max.apply(null, progress.map(function(p) { return new Date(p.created_at).getTime(); }));
+          const lastActive = new Date(lastTs).toLocaleDateString('en-US', {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'});
+          const leitnerMap = {};
+          leitner.forEach(function(l) { leitnerMap[l.member_idx] = l.box; });
+          const mastered = Object.values(leitnerMap).filter(function(b) { return b >= 5; }).length;
+          const masteryPct = GOLFERS.length ? Math.round(mastered / GOLFERS.length * 100) : 0;
+          const tierMastered = {1:0,2:0,3:0,4:0}, tierTotal = {1:0,2:0,3:0,4:0};
+          GOLFERS.forEach(function(g, i) {
+            tierTotal[g.tier] = (tierTotal[g.tier]||0) + 1;
+            if ((leitnerMap[i]||0) >= 5) tierMastered[g.tier] = (tierMastered[g.tier]||0) + 1;
+          });
+          return { name: profileName, totalAnswered, mastered, masteryPct, accPct, tierMastered, tierTotal, lastActive };
+        }));
+
+        const grid = document.getElementById('mgr-staff-grid');
+        if (!grid) return;
+        const cards = grid.querySelectorAll('.mgr-staff-card');
+        cards.forEach(function(card, i) {
+          const s = enriched[i];
+          if (!s || s.totalAnswered === 0) return;
+          card.innerHTML =
+            '<div class="mgr-staff-name">' + s.name + '</div>' +
+            '<div class="mgr-bars">' +
+              '<div class="mgr-bar-row"><div class="mgr-bar-label">Mastery</div>' +
+              '<div class="mgr-bar-track"><div class="mgr-bar-fill mastery" style="width:' + s.masteryPct + '%"></div></div>' +
+              '<div class="mgr-bar-val">' + s.masteryPct + '%</div></div>' +
+              (s.accPct !== null ? '<div class="mgr-bar-row"><div class="mgr-bar-label">Accuracy</div>' +
+              '<div class="mgr-bar-track"><div class="mgr-bar-fill accuracy" style="width:' + s.accPct + '%"></div></div>' +
+              '<div class="mgr-bar-val">' + s.accPct + '%</div></div>' : '') +
+            '</div>' +
+            '<div class="mgr-tier-breakdown">' +
+              [1,2,3,4].map(function(t) { return '<span class="mgr-tier-chip tier-badge t' + t + '">' + (s.tierMastered[t]||0) + '/' + s.tierTotal[t] + ' T' + t + '</span>'; }).join('') +
+            '</div>' +
+            '<div class="mgr-last-active">' + s.totalAnswered + ' answers total · Last active ' + s.lastActive + '</div>';
+        });
+
+        const all = enriched.map(function(e, i) { return e || localStats[i]; }).filter(Boolean);
+        const activeCount = all.filter(function(x) { return x.totalAnswered > 0; }).length;
+        const avgMastery = all.length ? Math.round(all.reduce(function(s,x){return s+x.masteryPct;},0)/all.length) : 0;
+        const topPct = all.length ? Math.max.apply(null, all.map(function(x){return x.masteryPct;})) : 0;
+        const statVals = document.querySelectorAll('.mgr-summary-row .mgr-stat .val');
+        if (statVals[0]) statVals[0].textContent = activeCount + '/' + profiles.length;
+        if (statVals[1]) statVals[1].textContent = avgMastery + '%';
+        if (statVals[2]) statVals[2].textContent = topPct + '%';
+      } catch (_) {
+        // Supabase unavailable — localStorage stats remain
+      }
     }
 
     function buildAnalyticsHTML(profiles) {
