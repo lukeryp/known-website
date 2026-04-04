@@ -1455,8 +1455,10 @@ let productionTimeout = null;
       currentQ = sIdx;
       const sG = GOLFERS[sIdx];
       updateSessionProgress();
-      if (quizMode === 'production' || isProductionMode(sIdx)) { renderProduction(sG, sIdx); }
-      else if (quizMode === 'recall' || isInRecallMode(sIdx)) { renderRecall(sG, sIdx, isInRecallMode(sIdx)); }
+      if (quizMode === 'production') { renderProduction(sG, sIdx); }
+      else if (quizMode === 'recall') { renderRecall(sG, sIdx, false); }
+      else if (isProductionMode(sIdx)) { renderProduction(sG, sIdx); }
+      else if (isInRecallMode(sIdx)) { renderRecall(sG, sIdx, true); }
       else { renderQuiz(sG, sIdx); }
       return;
     }
@@ -1472,8 +1474,10 @@ let productionTimeout = null;
 
     if (quizMode === 'production') {
       renderProduction(g, idx);
-    } else if (quizMode === 'recall' || isInRecallMode(idx)) {
-      renderRecall(g, idx, isInRecallMode(idx));
+    } else if (quizMode === 'recall') {
+      renderRecall(g, idx, false);
+    } else if (isInRecallMode(idx)) {
+      renderRecall(g, idx, true);
     } else {
       renderQuiz(g, idx);
     }
