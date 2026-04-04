@@ -7,13 +7,8 @@ module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  const supabaseUrl     = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '';
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-    // Not configured yet — client will fall back to localStorage-only mode
-    return res.json({ configured: false });
-  }
+  const supabaseUrl     = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || 'https://fcxyrebdegtjdsbasxfc.supabase.co';
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZjeHlyZWJkZWd0amRzYmFzeGZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyNjcyOTQsImV4cCI6MjA5MDg0MzI5NH0.Ngj7SJU3jelIoqOa2t18iK3oce3d2F1EWa8IiUQAh70';
 
   return res.json({ configured: true, supabaseUrl, supabaseAnonKey });
 };
