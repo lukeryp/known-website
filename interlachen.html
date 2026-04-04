@@ -2304,15 +2304,18 @@ let productionTimeout = null;
 
   window.emailSelected = function(li) {
     const list = LISTS[li];
-    const code = (() => {
-      const c = genListCode();
-      localStorage.setItem('icc_lt_' + c, JSON.stringify({ name: list.name, ids: list.ids }));
-      return c;
-    })();
+    const checked = [...document.querySelectorAll('.member-cb:checked')];
+    const emails = checked.map(cb => {
+      const g = GOLFERS[parseInt(cb.dataset.idx)];
+      return g && g.e ? g.e : null;
+    }).filter(Boolean);
+    const code = genListCode();
+    localStorage.setItem('icc_lt_' + code, JSON.stringify({ name: list.name, ids: list.ids }));
     const url = location.origin + location.pathname + '?lt=' + code;
-    const subject = encodeURIComponent('Practice Quiz: ' + list.name.replace(/[^\w\s]/g, '').trim());
-    const body = encodeURIComponent('Click the link below to start a quiz on ' + list.name.replace(/[^\w\s]/g, '').trim() + ':\n\n' + url);
-    location.href = 'mailto:?subject=' + subject + '&body=' + body;
+    const listTitle = list.name.replace(/[^\w\s]/g, '').trim();
+    const subject = encodeURIComponent('Practice Quiz: ' + listTitle);
+    const body = encodeURIComponent('Click to start your practice quiz for ' + listTitle + ':\n\n' + url);
+    location.href = 'mailto:' + emails.join(',') + '?subject=' + subject + '&body=' + body;
   };
 
   renderLists();
@@ -2365,12 +2368,18 @@ let productionTimeout = null;
     const hasMore = shown.length < results.length;
 
     dbList.innerHTML = `
-      <div class="db-count">${results.length} members</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div class="db-count" style="margin-bottom:0">${results.length} members</div>
+        <label class="select-all-label">
+          <input type="checkbox" id="db-select-all" onchange="dbToggleSelectAll(this)"> All
+        </label>
+      </div>
       ${shown.map(g => `
         <div class="db-member" onclick="showProfile(${g._i})">
+          <input type="checkbox" class="db-member-cb" data-idx="${g._i}" data-phone="${g.p || ''}" data-email="${g.e || ''}" onclick="event.stopPropagation(); dbUpdateSelectionBar()">
           <div class="mini-photo">${ftImgSm(g)}</div>
-            <div class="info">
-              <div class="name">${displayName(g)} <span class="tier-badge ${tierClass(g.tier)}">T${g.tier}</span></div>
+          <div class="info">
+            <div class="name">${displayName(g)} <span class="tier-badge ${tierClass(g.tier)}">T${g.tier}</span></div>
             <div class="meta">${g.membership} &middot; ${g.memberType} &middot; #${g.memberNumber}</div>
           </div>
           <div class="rounds">
@@ -2380,8 +2389,51 @@ let productionTimeout = null;
         </div>
       `).join('')}
       ${hasMore ? '<div style="text-align:center;padding:16px;"><button onclick="dbPage++;renderDB();" style="padding:10px 24px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;">Load More</button></div>' : ''}
+      <div class="member-action-bar" id="db-action-bar">
+        <span class="member-action-count" id="db-action-count">0 selected</span>
+        <div style="display:flex;gap:8px;flex-shrink:0">
+          <button class="member-action-btn" onclick="dbTextSelected()">Text</button>
+          <button class="member-action-btn member-action-btn-primary" onclick="dbEmailSelected()">Email</button>
+        </div>
+      </div>
     `;
   }
+
+  window.dbToggleSelectAll = function(cb) {
+    document.querySelectorAll('.db-member-cb').forEach(el => { el.checked = cb.checked; });
+    dbUpdateSelectionBar();
+  };
+
+  window.dbUpdateSelectionBar = function() {
+    const checked = document.querySelectorAll('.db-member-cb:checked');
+    const bar = document.getElementById('db-action-bar');
+    const countEl = document.getElementById('db-action-count');
+    const allCb = document.getElementById('db-select-all');
+    const total = document.querySelectorAll('.db-member-cb').length;
+    if (!bar) return;
+    bar.classList.toggle('visible', checked.length > 0);
+    if (countEl) countEl.textContent = checked.length + ' selected';
+    if (allCb) { allCb.indeterminate = checked.length > 0 && checked.length < total; allCb.checked = checked.length === total; }
+  };
+
+  window.dbTextSelected = function() {
+    const phones = [...document.querySelectorAll('.db-member-cb:checked')].map(cb => cb.dataset.phone).filter(Boolean);
+    if (!phones.length) { alert('No phone numbers on file for selected members.'); return; }
+    if (phones.length === 1) {
+      const d = phones[0].replace(/\D/g, '');
+      location.href = 'sms:' + (d.length === 10 ? '+1' + d : '+' + d);
+    } else {
+      const nums = phones.map(p => { const d = p.replace(/\D/g, ''); return d.length === 10 ? '+1' + d : '+' + d; }).join(',');
+      navigator.clipboard.writeText(nums).then(() => alert(phones.length + ' numbers copied:\n' + phones.join('\n')));
+    }
+  };
+
+  window.dbEmailSelected = function() {
+    const checked = [...document.querySelectorAll('.db-member-cb:checked')];
+    const emails = checked.map(cb => cb.dataset.email).filter(Boolean);
+    if (!emails.length) { alert('No email addresses on file for selected members. Use "Text" instead, or add emails to member data.'); return; }
+    location.href = 'mailto:' + emails.join(',');
+  };
 
   dbSearch.addEventListener('input', () => { dbPage = 0; renderDB(); });
   filterMembership.addEventListener('change', () => { dbPage = 0; renderDB(); });
@@ -2523,7 +2575,7 @@ let productionTimeout = null;
         <div class="p-field"><span class="label">9-Hole Rounds</span><span class="value">${g.rounds9}</span></div>
         <div class="p-field"><span class="label">Total Rounds (2025)</span><span class="value">${g.roundsTotal}</span></div>
         ${g.p ? '<div class="p-field"><span class="label">Phone</span><span class="value">' + smsLink(g.p) + '</span></div>' : ''}
-        ${g.e ? '<div class="p-field"><span class="label">Email</span><span class="value">' + mailLink(g.e) + '</span></div>' : ''}
+        <div class="p-field"><span class="label">Email</span><span class="value">${g.e ? mailLink(g.e) : '<span style="color:var(--text-secondary);font-style:italic;font-size:13px">No email on file</span>'}</span></div>
       </div>
     `;
     profileModal.classList.add('show');
