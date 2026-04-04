@@ -1866,8 +1866,11 @@ let productionTimeout = null;
         if (event.error === 'no-speech' || event.error === 'aborted') {
           if (_prodActive && !resolved) setTimeout(startListening, 200);
         } else {
-          statusEl.textContent = 'Mic: ' + event.error;
+          _prodActive = false; // prevent onend from restarting on fatal errors
+          statusEl.textContent = event.error === 'not-allowed' ? 'Mic access denied' : 'Mic: ' + event.error;
           dotEl.classList.remove('pulse');
+          micEl.classList.remove('listening');
+          skipBtn.textContent = 'Next →';
         }
       };
 
@@ -1875,7 +1878,11 @@ let productionTimeout = null;
         if (_prodActive && !resolved) setTimeout(startListening, 150);
       };
 
-      try { sr.start(); } catch(e) {}
+      try { sr.start(); } catch(e) {
+        _prodActive = false;
+        statusEl.textContent = 'Mic unavailable';
+        dotEl.classList.remove('pulse');
+      }
     }
 
     startListening();
