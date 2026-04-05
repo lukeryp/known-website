@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1a3c2a">
+<title>KNOWN Demo — Willow Creek CC</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--green:#1a3c2a;--green-light:#2d5a3e;--gold:#c9a84c;--gold-light:#d4b96a;--bg:#f5f2eb;--card:#fff;--text:#1a1a1a;--text-light:#6b6b6b;--correct:#2d8a4e;--wrong:#c0392b;--radius:14px;--shadow:0 2px 12px rgba(0,0,0,.08)}
+html,body{height:100%;overflow:hidden}
+body{font-family:'DM Sans',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);-webkit-tap-highlight-color:transparent;display:flex;flex-direction:column}
+button{font-family:inherit;cursor:pointer;border:none;background:none}
+input{font-family:inherit}
+
+/* Demo Banner */
+.demo-banner{background:var(--gold);color:var(--green);padding:8px 12px;display:flex;align-items:center;justify-content:space-between;font-size:.78rem;font-weight:600;flex-shrink:0}
+.demo-banner a{color:var(--green);font-weight:700;text-decoration:none;white-space:nowrap}
+
+/* Top Bar */
+.top-bar{background:var(--green);color:#fff;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.top-bar-title{font-size:1rem;font-weight:700;letter-spacing:1.5px}
+.top-bar-sub{font-size:.7rem;opacity:.7;font-weight:500}
+.top-bar-right{display:flex;align-items:center;gap:8px}
+.top-bar-right button{color:#fff;font-size:.75rem;font-weight:600;padding:4px 10px;border-radius:8px;background:rgba(255,255,255,.12)}
+
+/* Score Bar */
+.score-bar{background:var(--green);padding:0 16px 12px;display:flex;gap:16px;flex-shrink:0}
+.score-item{display:flex;flex-direction:column;align-items:center}
+.score-num{color:var(--gold);font-size:1.3rem;font-weight:800}
+.score-label{color:rgba(255,255,255,.6);font-size:.6rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+
+/* Tier Selector */
+.tier-bar{display:flex;gap:6px;padding:10px 16px;background:var(--bg);flex-shrink:0}
+.tier-btn{flex:1;padding:8px 4px;border-radius:10px;font-size:.72rem;font-weight:700;text-align:center;background:var(--card);color:var(--text-light);border:2px solid transparent;transition:all .2s}
+.tier-btn.active{background:var(--green);color:#fff;border-color:var(--green)}
+.tier-btn .tier-count{display:block;font-size:.62rem;font-weight:500;opacity:.7;margin-top:1px}
+
+/* Nav */
+.nav{display:flex;background:var(--card);border-top:1px solid #e5e1d8;flex-shrink:0;padding-bottom:env(safe-area-inset-bottom)}
+.nav-btn{flex:1;padding:8px 4px 6px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:.6rem;font-weight:600;color:var(--text-light);transition:color .2s}
+.nav-btn.active{color:var(--green)}
+.nav-btn svg{width:22px;height:22px}
+
+/* Main Content */
+.main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.view{display:none;height:100%;flex-direction:column}
+.view.active{display:flex}
+
+/* Quiz */
+.quiz-area{flex:1;display:flex;flex-direction:column;align-items:center;padding:20px 16px}
+.quiz-photo{width:140px;height:140px;border-radius:50%;overflow:hidden;border:4px solid var(--gold);margin-bottom:8px;box-shadow:0 4px 20px rgba(0,0,0,.12)}
+.quiz-photo img{width:100%;height:100%;object-fit:cover}
+.quiz-prompt{font-size:.85rem;color:var(--text-light);margin-bottom:16px;font-weight:500}
+.quiz-tier-label{font-size:.65rem;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+.choices{width:100%;max-width:400px;display:flex;flex-direction:column;gap:8px}
+.choice-btn{width:100%;padding:14px 16px;border-radius:12px;font-size:.95rem;font-weight:600;background:var(--card);border:2px solid #e5e1d8;text-align:center;transition:all .15s}
+.choice-btn:active{transform:scale(.98)}
+.choice-btn.correct{background:#e8f5e9;border-color:var(--correct);color:var(--correct)}
+.choice-btn.wrong{background:#fce4e4;border-color:var(--wrong);color:var(--wrong)}
+.choice-btn.reveal{background:#e8f5e9;border-color:var(--correct);color:var(--correct);opacity:.6}
+.choice-btn:disabled{pointer-events:none}
+
+/* Recall mode */
+.recall-area{width:100%;max-width:400px;display:flex;flex-direction:column;gap:10px;align-items:center}
+.recall-input{width:100%;padding:14px 16px;border-radius:12px;font-size:1rem;font-weight:600;border:2px solid #e5e1d8;background:var(--card);text-align:center;outline:none;transition:border-color .2s}
+.recall-input:focus{border-color:var(--gold)}
+.recall-input.correct{border-color:var(--correct);background:#e8f5e9;color:var(--correct)}
+.recall-input.wrong{border-color:var(--wrong);background:#fce4e4;color:var(--wrong)}
+.recall-actions{display:flex;gap:8px;width:100%}
+.recall-actions button{flex:1;padding:10px;border-radius:10px;font-size:.8rem;font-weight:700}
+.btn-submit{background:var(--green);color:#fff}
+.btn-hint{background:var(--card);color:var(--text-light);border:2px solid #e5e1d8}
+.btn-skip{background:var(--card);color:var(--wrong);border:2px solid #e5e1d8}
+.recall-feedback{font-size:.85rem;font-weight:600;min-height:24px;text-align:center}
+
+/* Mode toggle */
+.mode-toggle{display:flex;background:rgba(255,255,255,.15);border-radius:8px;overflow:hidden;margin-left:auto}
+.mode-toggle button{padding:5px 10px;font-size:.65rem;font-weight:700;color:rgba(255,255,255,.5);transition:all .2s}
+.mode-toggle button.active{background:rgba(255,255,255,.2);color:#fff}
+
+/* Browse */
+.browse-header{padding:12px 16px;flex-shrink:0}
+.browse-search{width:100%;padding:10px 14px;border-radius:10px;border:2px solid #e5e1d8;font-size:.85rem;background:var(--card);outline:none}
+.browse-search:focus{border-color:var(--gold)}
+.browse-list{flex:1;overflow-y:auto;padding:0 16px 16px}
+.browse-card{display:flex;align-items:center;gap:12px;padding:12px;background:var(--card);border-radius:12px;margin-bottom:8px;box-shadow:var(--shadow)}
+.browse-card img{width:48px;height:48px;border-radius:50%;border:2px solid var(--gold);flex-shrink:0}
+.browse-card-info{flex:1}
+.browse-card-name{font-size:.9rem;font-weight:700}
+.browse-card-detail{font-size:.7rem;color:var(--text-light);margin-top:2px}
+.browse-card-tier{font-size:.6rem;font-weight:700;padding:3px 8px;border-radius:6px;background:var(--green);color:#fff;flex-shrink:0}
+
+/* Progress */
+.progress-area{flex:1;overflow-y:auto;padding:16px}
+.grade-card{background:var(--green);border-radius:16px;padding:24px;text-align:center;color:#fff;margin-bottom:16px}
+.grade-letter{font-size:3.5rem;font-weight:800;color:var(--gold)}
+.grade-desc{font-size:.8rem;opacity:.7;margin-top:4px}
+.stats-row{display:flex;gap:8px;margin-bottom:16px}
+.stat-card{flex:1;background:var(--card);border-radius:12px;padding:14px;text-align:center;box-shadow:var(--shadow)}
+.stat-num{font-size:1.4rem;font-weight:800;color:var(--green)}
+.stat-label{font-size:.6rem;color:var(--text-light);font-weight:600;text-transform:uppercase;margin-top:2px}
+.leitner-section{background:var(--card);border-radius:12px;padding:16px;box-shadow:var(--shadow);margin-bottom:16px}
+.leitner-title{font-size:.8rem;font-weight:700;margin-bottom:12px}
+.leitner-boxes{display:flex;gap:6px}
+.leitner-box{flex:1;text-align:center;padding:10px 4px;border-radius:10px;background:var(--bg)}
+.leitner-box-num{font-size:1.1rem;font-weight:800;color:var(--green)}
+.leitner-box-label{font-size:.55rem;color:var(--text-light);font-weight:600;margin-top:2px}
+.reset-btn{width:100%;padding:12px;border-radius:12px;font-size:.8rem;font-weight:700;color:var(--wrong);background:var(--card);border:2px solid #e5e1d8;margin-top:8px}
+
+/* Leaderboard */
+.lb-area{flex:1;overflow-y:auto;padding:16px}
+.lb-header{text-align:center;margin-bottom:16px}
+.lb-header h2{font-size:1rem;font-weight:800}
+.lb-header p{font-size:.75rem;color:var(--text-light)}
+.lb-entry{display:flex;align-items:center;gap:12px;padding:12px;background:var(--card);border-radius:12px;margin-bottom:8px;box-shadow:var(--shadow)}
+.lb-rank{font-size:1rem;font-weight:800;color:var(--gold);width:28px;text-align:center}
+.lb-name{flex:1;font-size:.85rem;font-weight:600}
+.lb-score{font-size:.85rem;font-weight:800;color:var(--green)}
+.lb-entry.you{border:2px solid var(--gold);background:#fdf8ed}
+.share-btn{width:100%;padding:12px;border-radius:12px;font-size:.85rem;font-weight:700;background:var(--green);color:#fff;margin-top:12px}
+
+
+/* Lists */
+.lists-area{flex:1;overflow-y:auto;padding:16px}
+.lists-header{text-align:center;margin-bottom:16px}
+.lists-header h2{font-size:1rem;font-weight:800}
+.lists-header p{font-size:.75rem;color:var(--text-light)}
+.list-card{background:var(--card);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}
+.list-card-title{font-size:.95rem;font-weight:800;color:var(--text);margin-bottom:4px}
+.list-card-meta{font-size:.72rem;color:var(--text-light);margin-bottom:10px}
+.list-card-progress{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.list-progress-bar{flex:1;height:6px;background:#e5e1d8;border-radius:3px;overflow:hidden}
+.list-progress-fill{height:100%;background:var(--green);border-radius:3px;transition:width .4s}
+.list-progress-label{font-size:.7rem;font-weight:700;color:var(--green);white-space:nowrap}
+.list-start-btn{width:100%;padding:11px;border-radius:11px;font-size:.85rem;font-weight:700;background:var(--green);color:#fff}
+.list-quiz-back{padding:6px 12px;border-radius:8px;font-size:.72rem;font-weight:700;background:rgba(255,255,255,.15);color:#fff;margin-left:8px}
+
+/* Onboarding Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{background:var(--card);border-radius:20px;padding:32px 24px;max-width:360px;width:100%;text-align:center}
+.modal h2{font-size:1.2rem;font-weight:800;margin-bottom:4px}
+.modal .modal-sub{font-size:.8rem;color:var(--text-light);margin-bottom:20px;line-height:1.4}
+.modal .modal-logo{font-size:1.4rem;font-weight:800;color:var(--green);letter-spacing:2px;margin-bottom:16px}
+.modal input{width:100%;padding:12px 14px;border-radius:10px;border:2px solid #e5e1d8;font-size:.9rem;margin-bottom:12px;outline:none;text-align:center}
+.modal input:focus{border-color:var(--gold)}
+.modal button{width:100%;padding:12px;border-radius:12px;font-size:.9rem;font-weight:700;background:var(--green);color:#fff}
+.modal .modal-note{font-size:.65rem;color:var(--text-light);margin-top:12px;line-height:1.4}
+
+/* Feedback overlay */
+.feedback-overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:50;pointer-events:none;opacity:0;transition:opacity .2s}
+.feedback-overlay.show{opacity:1}
+.feedback-icon{font-size:4rem}
+
+/* Misc */
+.hidden{display:none!important}
+@media(min-width:500px){
+  body{max-width:430px;margin:0 auto;box-shadow:0 0 40px rgba(0,0,0,.1)}
+}
+</style>
+</head>
+<body>
+
+<!-- Demo Banner -->
+<div class="demo-banner">
+  <span>&#9971; KNOWN Demo — Fictional club data</span>
+  <a href="https://known.golf" target="_blank">Get KNOWN for your club &rarr;</a>
+</div>
+
+<!-- Top Bar -->
+<div class="top-bar">
+  <div>
+    <div class="top-bar-title">WILLOW CREEK</div>
+    <div class="top-bar-sub">KNOWN Demo</div>
+  </div>
+  <div class="top-bar-right">
+    <button class="list-quiz-back" id="listQuizBack" style="display:none" onclick="exitListQuiz()">&#8592; Lists</button>
+    <div class="mode-toggle" id="modeToggle">
+      <button class="active" onclick="setMode('mc')">Quiz</button>
+      <button onclick="setMode('recall')">Recall</button>
+    </div>
+  </div>
+</div>
+
+<!-- Score Bar -->
+<div class="score-bar" id="scoreBar">
+  <div class="score-item"><span class="score-num" id="scoreStreak">0</span><span class="score-label">Streak</span></div>
+  <div class="score-item"><span class="score-num" id="scorePct">0%</span><span class="score-label">Session</span></div>
+  <div class="score-item"><span class="score-num" id="scoreTotal">0</span><span class="score-label">Answered</span></div>
+  <div class="score-item"><span class="score-num" id="scoreMastered">0</span><span class="score-label">Mastered</span></div>
+</div>
+
+<!-- Tier Selector -->
+<div class="tier-bar" id="tierBar">
+  <button class="tier-btn active" onclick="setTier(1)">Must Know<span class="tier-count">Top 15</span></button>
+  <button class="tier-btn" onclick="setTier(2)">Should Know<span class="tier-count">Top 25</span></button>
+  <button class="tier-btn" onclick="setTier(3)">All Members<span class="tier-count">All 40</span></button>
+</div>
+
+<!-- Main Content -->
+<div class="main">
+  <!-- Quiz View -->
+  <div class="view active" id="viewQuiz">
+    <div class="quiz-area" id="quizArea"></div>
+  </div>
+
+  <!-- Browse View -->
+  <div class="view" id="viewBrowse">
+    <div class="browse-header">
+      <input type="text" class="browse-search" placeholder="Search members..." oninput="filterBrowse(this.value)" id="browseSearch">
+    </div>
+    <div class="browse-list" id="browseList"></div>
+  </div>
+
+  <!-- Progress View -->
+  <div class="view" id="viewProgress">
+    <div class="progress-area" id="progressArea"></div>
+  </div>
+
+  <!-- Leaderboard View -->
+  <div class="view" id="viewLeaderboard">
+    <div class="lb-area" id="lbArea"></div>
+  </div>
+</div>
+
+  <!-- Lists View -->
+  <div class="view" id="viewLists">
+    <div class="lists-area" id="listsArea"></div>
+  </div>
+
+<!-- Nav -->
+<div class="nav">
+  <button class="nav-btn active" onclick="showView('Quiz')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r=".5"/></svg>
+    Quiz
+  </button>
+  <button class="nav-btn" onclick="showView('Browse')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+    Browse
+  </button>
+  <button class="nav-btn" onclick="showView('Progress')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+    Progress
+  </button>
+  <button class="nav-btn" onclick="showView('Leaderboard')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 010-5C7 4 6 9 6 9zm12 0h1.5a2.5 2.5 0 000-5C17 4 18 9 18 9zm-1 0l1 10H6L7 9"/><path d="M9 19v2m6-2v2"/></svg>
+    Board
+  </button>
+  <button class="nav-btn" onclick="showView('Lists')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3" cy="6" r="1.5" fill="currentColor" stroke="none"/><circle cx="3" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="3" cy="18" r="1.5" fill="currentColor" stroke="none"/></svg>
+    Lists
+  </button>
+</div>
+
+<!-- Onboarding Modal -->
+<div class="modal-overlay" id="onboarding">
+  <div class="modal">
+    <div class="modal-logo">KNOWN</div>
+    <h2>Welcome to the Demo</h2>
+    <p class="modal-sub">Experience how KNOWN helps staff learn member names at <strong>Willow Creek Country Club</strong></p>
+    <input type="text" id="userName" placeholder="Enter your first name" autocomplete="off" autofocus>
+    <button onclick="startDemo()">Start Learning</button>
+    <p class="modal-note">This demo uses fictional members. Your progress is saved locally.<br>Visit <a href="https://known.golf" target="_blank" style="color:var(--gold);font-weight:700">known.golf</a> to get KNOWN for your club.</p>
+  </div>
+</div>
+
+<script>
+/* ===== MEMBER DATA ===== */
+var MEMBERS = [
+  {id:1,fn:"Robert",ln:"Henderson",fam:"Bob",full:"Robert Henderson",gender:"M",rounds:78},
+  {id:2,fn:"Margaret",ln:"Whitfield",fam:"Peggy",full:"Margaret Whitfield",gender:"F",rounds:65},
+  {id:3,fn:"James",ln:"Crawford",fam:"James",full:"James Crawford III",gender:"M",rounds:52},
+  {id:4,fn:"William",ln:"Ashworth",fam:"Bill",full:"William Ashworth",gender:"M",rounds:91},
+  {id:5,fn:"Patricia",ln:"Kensington",fam:"Pat",full:"Patricia Kensington",gender:"F",rounds:84},
+  {id:6,fn:"Charles",ln:"Beaumont",fam:"Charlie",full:"Charles Beaumont",gender:"M",rounds:73},
+  {id:7,fn:"Elizabeth",ln:"Davenport",fam:"Liz",full:"Elizabeth Davenport",gender:"F",rounds:70},
+  {id:8,fn:"Thomas",ln:"Wainwright",fam:"Tom",full:"Thomas Wainwright",gender:"M",rounds:67},
+  {id:9,fn:"Catherine",ln:"Prescott",fam:"Cathy",full:"Catherine Prescott",gender:"F",rounds:63},
+  {id:10,fn:"Richard",ln:"Fairbanks",fam:"Rich",full:"Richard Fairbanks",gender:"M",rounds:61},
+  {id:11,fn:"Susan",ln:"Hargrove",fam:"Sue",full:"Susan Hargrove",gender:"F",rounds:58},
+  {id:12,fn:"Edward",ln:"Thornton",fam:"Ed",full:"Edward Thornton",gender:"M",rounds:56},
+  {id:13,fn:"Dorothy",ln:"Caldwell",fam:"Dot",full:"Dorothy Caldwell",gender:"F",rounds:54},
+  {id:14,fn:"George",ln:"Pemberton",fam:"George",full:"George Pemberton",gender:"M",rounds:50},
+  {id:15,fn:"Barbara",ln:"Sinclair",fam:"Barb",full:"Barbara Sinclair",gender:"F",rounds:48},
+  {id:16,fn:"Henry",ln:"Whitmore",fam:"Hank",full:"Henry Whitmore",gender:"M",rounds:46},
+  {id:17,fn:"Virginia",ln:"Ellsworth",fam:"Ginny",full:"Virginia Ellsworth",gender:"F",rounds:44},
+  {id:18,fn:"Franklin",ln:"Mercer",fam:"Frank",full:"Franklin Mercer",gender:"M",rounds:42},
+  {id:19,fn:"Carolyn",ln:"Blackwell",fam:"Carolyn",full:"Carolyn Blackwell",gender:"F",rounds:40},
+  {id:20,fn:"Theodore",ln:"Ashford",fam:"Ted",full:"Theodore Ashford",gender:"M",rounds:38},
+  {id:21,fn:"Janet",ln:"Worthington",fam:"Jan",full:"Janet Worthington",gender:"F",rounds:36},
+  {id:22,fn:"Lawrence",ln:"Covington",fam:"Larry",full:"Lawrence Covington",gender:"M",rounds:34},
+  {id:23,fn:"Marilyn",ln:"Stratton",fam:"Marilyn",full:"Marilyn Stratton",gender:"F",rounds:32},
+  {id:24,fn:"Douglas",ln:"Fitzgerald",fam:"Doug",full:"Douglas Fitzgerald",gender:"M",rounds:30},
+  {id:25,fn:"Eleanor",ln:"Whitaker",fam:"Ellie",full:"Eleanor Whitaker",gender:"F",rounds:28},
+  {id:26,fn:"Raymond",ln:"Carmichael",fam:"Ray",full:"Raymond Carmichael",gender:"M",rounds:26},
+  {id:27,fn:"Judith",ln:"Pendleton",fam:"Judy",full:"Judith Pendleton",gender:"F",rounds:24},
+  {id:28,fn:"Philip",ln:"Harrington",fam:"Phil",full:"Philip Harrington",gender:"M",rounds:22},
+  {id:29,fn:"Beverly",ln:"Lockwood",fam:"Bev",full:"Beverly Lockwood",gender:"F",rounds:20},
+  {id:30,fn:"Walter",ln:"Stafford",fam:"Walt",full:"Walter Stafford",gender:"M",rounds:18},
+  {id:31,fn:"Diane",ln:"Kingsley",fam:"Diane",full:"Diane Kingsley",gender:"F",rounds:16},
+  {id:32,fn:"Kenneth",ln:"Bradshaw",fam:"Ken",full:"Kenneth Bradshaw",gender:"M",rounds:14},
+  {id:33,fn:"Gloria",ln:"Fairchild",fam:"Gloria",full:"Gloria Fairchild",gender:"F",rounds:12},
+  {id:34,fn:"Arthur",ln:"Livingston",fam:"Art",full:"Arthur Livingston",gender:"M",rounds:10},
+  {id:35,fn:"Shirley",ln:"Montague",fam:"Shirley",full:"Shirley Montague",gender:"F",rounds:9},
+  {id:36,fn:"Donald",ln:"Templeton",fam:"Don",full:"Donald Templeton",gender:"M",rounds:8},
+  {id:37,fn:"Linda",ln:"Wakefield",fam:"Linda",full:"Linda Wakefield",gender:"F",rounds:7},
+  {id:38,fn:"Russell",ln:"Pembroke",fam:"Russ",full:"Russell Pembroke",gender:"M",rounds:5},
+  {id:39,fn:"Christine",ln:"Sutherland",fam:"Chris",full:"Christine Sutherland",gender:"F",rounds:4},
+  {id:40,fn:"Jonathan",ln:"Whitfield",fam:"Jon",full:"Jonathan Whitfield",gender:"M",rounds:3}
+];
+
+/* Generate photo URLs */
+MEMBERS.forEach(function(m){
+  m.photo = "https://api.dicebear.com/7.x/initials/svg?seed=" + encodeURIComponent(m.full) + "&backgroundColor=1a3c2a,2d8a4e,c9a84c,5a9e6f,8e44ad,c0392b,2980b9,e67e22&backgroundType=solid";
+});
+
+/* Sort by rounds descending for tier assignment */
+MEMBERS.sort(function(a,b){return b.rounds - a.rounds});
+
+/* Nickname map for fuzzy matching */
+var NICKNAMES = {
+  "robert":["bob","bobby","rob"],"william":["bill","billy","will","willy"],"james":["jim","jimmy","jamie"],
+  "charles":["charlie","chuck"],"richard":["rich","rick","dick"],"thomas":["tom","tommy"],
+  "edward":["ed","eddie","ted","teddy"],"margaret":["peggy","maggie","meg"],
+  "elizabeth":["liz","lizzy","beth","betty"],"patricia":["pat","patty","trish"],
+  "catherine":["cathy","kate","cat"],"susan":["sue","suzy","susie"],
+  "dorothy":["dot","dotty","dottie"],"barbara":["barb","barbie"],"virginia":["ginny","ginger"],
+  "franklin":["frank","frankie"],"theodore":["ted","teddy","theo"],
+  "janet":["jan","janice"],"lawrence":["larry"],"douglas":["doug"],
+  "eleanor":["ellie","ella","nell"],"raymond":["ray"],"judith":["judy","judi"],
+  "philip":["phil"],"beverly":["bev"],"walter":["walt","wally"],
+  "kenneth":["ken","kenny"],"arthur":["art","artie"],"donald":["don","donny"],
+  "russell":["russ","rusty"],"christine":["chris","christy","tina"],
+  "jonathan":["jon","jonny","john"],"henry":["hank","harry"],
+  "george":["geo"],"carolyn":["carol","carrie"],"marilyn":["mary"],
+  "gloria":["glo"],"shirley":["shirl"],"diane":["di"],
+  "linda":["lin"]
+};
+
+
+/* ===== LISTS ===== */
+var LIST_DATA = [
+  {
+    id: "tuesday-mens",
+    name: "Tuesday Men's Group",
+    icon: "&#9971;",
+    memberIds: [1,3,4,6,8,10,12,14,16,18,20,22,24]
+  },
+  {
+    id: "ladies-nine-wine",
+    name: "Ladies Nine & Wine",
+    icon: "&#127863;",
+    memberIds: [2,5,7,9,11,13,15,17,19,21,23,25]
+  }
+];
+var activeListIds = null; // null = full tier quiz; array = list quiz mode
+
+/* ===== STATE ===== */
+var STORAGE_KEY = "known_demo_v1";
+var state = loadState();
+var currentTier = 1;
+var currentView = "Quiz";
+var quizMode = "mc"; // "mc" or "recall"
+var sessionCorrect = 0;
+var sessionTotal = 0;
+var streak = 0;
+var currentQuizMember = null;
+var currentChoices = [];
+var answered = false;
+var hintUsed = false;
+
+function defaultState(){
+  return {
+    userName: "",
+    onboarded: false,
+    leitner: {},
+    totalAnswered: 0,
+    totalCorrect: 0,
+    bestStreak: 0
+  };
+}
+
+function loadState(){
+  try{
+    var s = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if(s && s.onboarded) return s;
+  }catch(e){}
+  return defaultState();
+}
+
+function saveState(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function getBox(memberId){
+  return state.leitner[memberId] || 1;
+}
+
+function setBox(memberId, box){
+  state.leitner[memberId] = Math.max(1, Math.min(5, box));
+  saveState();
+}
+
+/* ===== TIERS ===== */
+function getTierMembers(tier){
+  if(tier === 1) return MEMBERS.slice(0, 15);
+  if(tier === 2) return MEMBERS.slice(0, 25);
+  return MEMBERS.slice();
+}
+
+function setTier(t){
+  currentTier = t;
+  var btns = document.querySelectorAll(".tier-btn");
+  btns.forEach(function(b,i){b.classList.toggle("active", i === t-1)});
+  if(currentView === "Quiz") nextQuiz();
+}
+
+/* ===== VIEWS ===== */
+function showView(name){
+  currentView = name;
+  ["Quiz","Browse","Progress","Leaderboard","Lists"].forEach(function(v){
+    document.getElementById("view"+v).classList.toggle("active", v === name);
+  });
+  document.querySelectorAll(".nav-btn").forEach(function(b,i){
+    var views = ["Quiz","Browse","Progress","Leaderboard","Lists"];
+    b.classList.toggle("active", views[i] === name);
+  });
+  // Show/hide quiz-specific UI
+  var quizUI = name === "Quiz";
+  document.getElementById("scoreBar").style.display = quizUI ? "flex" : "none";
+  document.getElementById("tierBar").style.display = (quizUI || name === "Browse") ? "flex" : "none";
+  document.getElementById("modeToggle").style.display = quizUI ? "flex" : "none";
+
+  if(name === "Quiz") nextQuiz();
+  if(name === "Browse") renderBrowse();
+  if(name === "Progress") renderProgress();
+  if(name === "Leaderboard") renderLeaderboard();
+  if(name === "Lists") renderLists();
+}
+
+/* ===== QUIZ MODE ===== */
+function setMode(mode){
+  quizMode = mode;
+  document.querySelectorAll("#modeToggle button").forEach(function(b){
+    b.classList.toggle("active", (mode === "mc" && b.textContent === "Quiz") || (mode === "recall" && b.textContent === "Recall"));
+  });
+  nextQuiz();
+}
+
+/* ===== QUIZ ===== */
+function getQuizPool(){
+  if(activeListIds !== null){
+    return MEMBERS.filter(function(m){ return activeListIds.indexOf(m.id) > -1; });
+  }
+  return getTierMembers(currentTier);
+}
+
+function pickQuizMember(){
+  var pool = getTierMembers(currentTier);
+  // Weight by Leitner box — lower boxes get more chances
+  var weighted = [];
+  pool.forEach(function(m){
+    var box = getBox(m.id);
+    var weight = Math.max(1, 6 - box); // box1=5, box5=1
+    for(var i = 0; i < weight; i++) weighted.push(m);
+  });
+  // Avoid repeating same member
+  var pick;
+  var attempts = 0;
+  do {
+    pick = weighted[Math.floor(Math.random() * weighted.length)];
+    attempts++;
+  } while(pick === currentQuizMember && attempts < 20);
+  return pick;
+}
+
+function generateChoices(correct){
+  var pool = MEMBERS.filter(function(m){return m.gender === correct.gender && m.id !== correct.id});
+  // Shuffle and pick 3
+  pool.sort(function(){return Math.random() - .5});
+  var wrongs = pool.slice(0, 3);
+  var choices = wrongs.concat([correct]);
+  // Shuffle choices
+  choices.sort(function(){return Math.random() - .5});
+  return choices;
+}
+
+function nextQuiz(){
+  answered = false;
+  hintUsed = false;
+  // Update back button visibility
+  var backBtn = document.getElementById("listQuizBack");
+  if(backBtn) backBtn.style.display = activeListIds ? "inline-block" : "none";
+  currentQuizMember = pickQuizMember();
+  var m = currentQuizMember;
+  var box = getBox(m.id);
+  var tierLabel = currentTier === 1 ? "MUST KNOW" : currentTier === 2 ? "SHOULD KNOW" : "ALL MEMBERS";
+
+  if(quizMode === "mc"){
+    currentChoices = generateChoices(m);
+    var html = '<div class="quiz-tier-label">' + tierLabel + ' &bull; Box ' + box + '</div>';
+    html += '<div class="quiz-photo"><img src="' + m.photo + '" alt="Member photo" loading="eager"></div>';
+    html += '<div class="quiz-prompt">Who is this member?</div>';
+    html += '<div class="choices">';
+    currentChoices.forEach(function(c, i){
+      html += '<button class="choice-btn" onclick="answerMC(' + i + ')">' + c.full + '</button>';
+    });
+    html += '</div>';
+    document.getElementById("quizArea").innerHTML = html;
+  } else {
+    var html = '<div class="quiz-tier-label">' + tierLabel + ' &bull; Box ' + box + '</div>';
+    html += '<div class="quiz-photo"><img src="' + m.photo + '" alt="Member photo" loading="eager"></div>';
+    html += '<div class="quiz-prompt">Type this member\'s name</div>';
+    html += '<div class="recall-area">';
+    html += '<input type="text" class="recall-input" id="recallInput" placeholder="Enter name..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">';
+    html += '<div class="recall-feedback" id="recallFeedback"></div>';
+    html += '<div class="recall-actions">';
+    html += '<button class="btn-hint" onclick="giveHint()">Hint</button>';
+    html += '<button class="btn-submit" onclick="answerRecall()">Submit</button>';
+    html += '<button class="btn-skip" onclick="skipRecall()">Skip</button>';
+    html += '</div></div>';
+    document.getElementById("quizArea").innerHTML = html;
+    var inp = document.getElementById("recallInput");
+    inp.addEventListener("keydown", function(e){if(e.key === "Enter") answerRecall()});
+    setTimeout(function(){inp.focus()}, 100);
+  }
+  updateScoreBar();
+}
+
+function answerMC(idx){
+  if(answered) return;
+  answered = true;
+  var chosen = currentChoices[idx];
+  var correct = currentQuizMember;
+  var isCorrect = chosen.id === correct.id;
+  var btns = document.querySelectorAll(".choice-btn");
+  btns.forEach(function(b){b.disabled = true});
+
+  if(isCorrect){
+    btns[idx].classList.add("correct");
+    recordAnswer(correct, true);
+    setTimeout(nextQuiz, 800);
+  } else {
+    btns[idx].classList.add("wrong");
+    // Reveal correct
+    currentChoices.forEach(function(c, i){
+      if(c.id === correct.id) btns[i].classList.add("reveal");
+    });
+    recordAnswer(correct, false);
+    // Tap to continue
+    document.getElementById("quizArea").addEventListener("click", function handler(){
+      document.getElementById("quizArea").removeEventListener("click", handler);
+      nextQuiz();
+    }, {once: true});
+  }
+}
+
+function answerRecall(){
+  if(answered) return;
+  var inp = document.getElementById("recallInput");
+  var guess = inp.value.trim();
+  if(!guess) return;
+  var m = currentQuizMember;
+  var isCorrect = fuzzyMatch(guess, m);
+  answered = true;
+
+  if(isCorrect){
+    inp.classList.add("correct");
+    document.getElementById("recallFeedback").innerHTML = '<span style="color:var(--correct)">&#10003; ' + m.full + '</span>';
+    recordAnswer(m, true);
+    setTimeout(nextQuiz, 1000);
+  } else {
+    inp.classList.add("wrong");
+    document.getElementById("recallFeedback").innerHTML = '<span style="color:var(--wrong)">&#10007; It was <strong>' + m.full + '</strong></span>';
+    recordAnswer(m, false);
+    document.getElementById("quizArea").addEventListener("click", function handler(e){
+      if(e.target.closest(".recall-actions")) return;
+      document.getElementById("quizArea").removeEventListener("click", handler);
+      nextQuiz();
+    }, {once: true});
+  }
+}
+
+function skipRecall(){
+  if(answered) return;
+  answered = true;
+  var m = currentQuizMember;
+  document.getElementById("recallInput").classList.add("wrong");
+  document.getElementById("recallFeedback").innerHTML = '<span style="color:var(--wrong)">It was <strong>' + m.full + '</strong></span>';
+  recordAnswer(m, false);
+  setTimeout(nextQuiz, 1500);
+}
+
+function giveHint(){
+  if(hintUsed) return;
+  hintUsed = true;
+  var m = currentQuizMember;
+  document.getElementById("recallFeedback").innerHTML = '<span style="color:var(--gold)">Starts with "' + m.fn[0] + '"... Last name starts with "' + m.ln[0] + '"</span>';
+}
+
+function fuzzyMatch(guess, member){
+  var g = guess.toLowerCase().trim();
+  // Direct matches
+  var targets = [
+    member.full.toLowerCase(),
+    member.fn.toLowerCase(),
+    member.ln.toLowerCase(),
+    member.fam.toLowerCase(),
+    (member.fam + " " + member.ln).toLowerCase(),
+    (member.fn + " " + member.ln).toLowerCase()
+  ];
+  for(var i = 0; i < targets.length; i++){
+    if(g === targets[i]) return true;
+    // Allow minor typos: Levenshtein distance <= 1 for short names, <= 2 for full names
+    var threshold = targets[i].length > 8 ? 2 : 1;
+    if(levenshtein(g, targets[i]) <= threshold) return true;
+  }
+  // Check nickname matches
+  var fnLower = member.fn.toLowerCase();
+  if(NICKNAMES[fnLower]){
+    for(var j = 0; j < NICKNAMES[fnLower].length; j++){
+      var nick = NICKNAMES[fnLower][j];
+      if(g === nick || g === nick + " " + member.ln.toLowerCase()) return true;
+    }
+  }
+  return false;
+}
+
+function levenshtein(a, b){
+  var m = a.length, n = b.length;
+  var dp = [];
+  for(var i = 0; i <= m; i++){
+    dp[i] = [i];
+    for(var j = 1; j <= n; j++){
+      if(i === 0) dp[i][j] = j;
+      else dp[i][j] = Math.min(
+        dp[i-1][j] + 1,
+        dp[i][j-1] + 1,
+        dp[i-1][j-1] + (a[i-1] !== b[j-1] ? 1 : 0)
+      );
+    }
+  }
+  return dp[m][n];
+}
+
+function recordAnswer(member, correct){
+  sessionTotal++;
+  state.totalAnswered++;
+  if(correct){
+    sessionCorrect++;
+    state.totalCorrect++;
+    streak++;
+    if(streak > state.bestStreak) state.bestStreak = streak;
+    setBox(member.id, getBox(member.id) + 1);
+  } else {
+    streak = 0;
+    setBox(member.id, 1);
+  }
+  saveState();
+  updateScoreBar();
+}
+
+function updateScoreBar(){
+  document.getElementById("scoreStreak").textContent = streak;
+  document.getElementById("scorePct").textContent = sessionTotal ? Math.round(sessionCorrect / sessionTotal * 100) + "%" : "0%";
+  document.getElementById("scoreTotal").textContent = sessionTotal;
+  // Count mastered (box 4+)
+  var mastered = 0;
+  getQuizPool().forEach(function(m){if(getBox(m.id) >= 4) mastered++});
+  document.getElementById("scoreMastered").textContent = mastered;
+}
+
+
+/* ===== LISTS ===== */
+function getMastered(memberIds){
+  var count = 0;
+  memberIds.forEach(function(id){ if(getBox(id) >= 4) count++; });
+  return count;
+}
+
+function renderLists(){
+  var html = '<div class="lists-header"><h2>Practice Lists</h2><p>Quiz yourself on specific member groups</p></div>';
+  LIST_DATA.forEach(function(list){
+    // Filter to members that actually exist in MEMBERS
+    var validIds = list.memberIds.filter(function(id){
+      return MEMBERS.some(function(m){ return m.id === id; });
+    });
+    var total = validIds.length;
+    var mastered = getMastered(validIds);
+    var pct = total ? Math.round(mastered / total * 100) : 0;
+    html += '<div class="list-card">';
+    html += '<div class="list-card-title">' + list.icon + ' ' + list.name + '</div>';
+    html += '<div class="list-card-meta">' + total + ' members</div>';
+    html += '<div class="list-card-progress">';
+    html += '<div class="list-progress-bar"><div class="list-progress-fill" style="width:' + pct + '%"></div></div>';
+    html += '<div class="list-progress-label">' + mastered + '/' + total + ' mastered</div>';
+    html += '</div>';
+    html += '<button class="list-start-btn" onclick="startListQuiz(' + JSON.stringify(validIds) + ')">Start Quiz</button>';
+    html += '</div>';
+  });
+  document.getElementById("listsArea").innerHTML = html;
+}
+
+function startListQuiz(memberIds){
+  activeListIds = memberIds;
+  showView('Quiz');
+}
+
+function exitListQuiz(){
+  activeListIds = null;
+  showView('Lists');
+}
+
+/* ===== BROWSE ===== */
+function renderBrowse(){
+  var pool = getTierMembers(currentTier);
+  var search = (document.getElementById("browseSearch").value || "").toLowerCase();
+  if(search){
+    pool = pool.filter(function(m){
+      return m.full.toLowerCase().indexOf(search) > -1 || m.fam.toLowerCase().indexOf(search) > -1;
+    });
+  }
+  var html = "";
+  pool.forEach(function(m){
+    var tier = m.rounds >= MEMBERS[14].rounds ? "Tier 1" : m.rounds >= MEMBERS[24].rounds ? "Tier 2" : "Tier 3";
+    var box = getBox(m.id);
+    html += '<div class="browse-card">';
+    html += '<img src="' + m.photo + '" alt="' + m.full + '">';
+    html += '<div class="browse-card-info"><div class="browse-card-name">' + m.full + '</div>';
+    html += '<div class="browse-card-detail">' + (m.fam !== m.fn ? '"' + m.fam + '" &bull; ' : '') + m.rounds + ' rounds &bull; Box ' + box + '</div></div>';
+    html += '<span class="browse-card-tier">' + tier + '</span>';
+    html += '</div>';
+  });
+  if(!html) html = '<p style="text-align:center;color:var(--text-light);padding:40px">No members found</p>';
+  document.getElementById("browseList").innerHTML = html;
+}
+
+function filterBrowse(v){
+  renderBrowse();
+}
+
+/* ===== PROGRESS ===== */
+function renderProgress(){
+  var pool = getTierMembers(currentTier);
+  var boxes = [0,0,0,0,0];
+  pool.forEach(function(m){
+    var b = getBox(m.id);
+    boxes[b-1]++;
+  });
+  var mastered = 0;
+  pool.forEach(function(m){if(getBox(m.id) >= 3) mastered++});
+  var pct = pool.length ? Math.round(mastered / pool.length * 100) : 0;
+  var grade = pct >= 90 ? "A" : pct >= 85 ? "A-" : pct >= 80 ? "B+" : pct >= 70 ? "B" : pct >= 60 ? "C+" : pct >= 50 ? "C" : pct >= 25 ? "D" : "F";
+  var gradeDesc = {A:"Outstanding",["A-"]:"Excellent","B+":"Great","B":"Good","C+":"Getting There","C":"Developing","D":"Needs Work","F":"Just Starting"};
+
+  var html = '<div class="grade-card">';
+  html += '<div class="grade-letter">' + grade + '</div>';
+  html += '<div class="grade-desc">' + (gradeDesc[grade] || "") + ' &bull; ' + pct + '% of members in box 3+</div>';
+  html += '</div>';
+
+  html += '<div class="stats-row">';
+  html += '<div class="stat-card"><div class="stat-num">' + state.totalAnswered + '</div><div class="stat-label">Total Answered</div></div>';
+  html += '<div class="stat-card"><div class="stat-num">' + (state.totalAnswered ? Math.round(state.totalCorrect/state.totalAnswered*100) : 0) + '%</div><div class="stat-label">All-Time Acc</div></div>';
+  html += '<div class="stat-card"><div class="stat-num">' + state.bestStreak + '</div><div class="stat-label">Best Streak</div></div>';
+  html += '</div>';
+
+  html += '<div class="leitner-section"><div class="leitner-title">Spaced Repetition Boxes</div><div class="leitner-boxes">';
+  var boxLabels = ["New","Learning","Familiar","Known","Mastered"];
+  for(var i = 0; i < 5; i++){
+    html += '<div class="leitner-box"><div class="leitner-box-num">' + boxes[i] + '</div><div class="leitner-box-label">Box ' + (i+1) + '<br>' + boxLabels[i] + '</div></div>';
+  }
+  html += '</div></div>';
+
+  html += '<button class="reset-btn" onclick="resetProgress()">Reset All Progress</button>';
+  document.getElementById("progressArea").innerHTML = html;
+}
+
+function resetProgress(){
+  if(confirm("Reset all progress? This cannot be undone.")){
+    state.leitner = {};
+    state.totalAnswered = 0;
+    state.totalCorrect = 0;
+    state.bestStreak = 0;
+    sessionCorrect = 0;
+    sessionTotal = 0;
+    streak = 0;
+    saveState();
+    renderProgress();
+    updateScoreBar();
+  }
+}
+
+/* ===== LEADERBOARD ===== */
+function renderLeaderboard(){
+  // Simulated team leaderboard
+  var yourScore = state.totalAnswered ? Math.round(state.totalCorrect / state.totalAnswered * 100) : 0;
+  var fakeTeam = [
+    {name:"Sarah M.",score:94},{name:"Marcus D.",score:88},{name:"Emily R.",score:82},
+    {name:"Tyler K.",score:76},{name:"Ava L.",score:71},{name:"Jordan B.",score:65},
+    {name:"Samantha W.",score:58}
+  ];
+  // Insert user
+  var userEntry = {name: (state.userName || "You"), score: yourScore, isYou: true};
+  fakeTeam.push(userEntry);
+  fakeTeam.sort(function(a,b){return b.score - a.score});
+
+  var html = '<div class="lb-header"><h2>Team Leaderboard</h2><p>See how you compare with the team</p></div>';
+  fakeTeam.forEach(function(e,i){
+    html += '<div class="lb-entry' + (e.isYou ? ' you' : '') + '">';
+    html += '<div class="lb-rank">' + (i+1) + '</div>';
+    html += '<div class="lb-name">' + e.name + (e.isYou ? ' (You)' : '') + '</div>';
+    html += '<div class="lb-score">' + e.score + '%</div>';
+    html += '</div>';
+  });
+  html += '<button class="share-btn" onclick="shareScore()">Share Your Score</button>';
+  document.getElementById("lbArea").innerHTML = html;
+}
+
+function shareScore(){
+  var pct = state.totalAnswered ? Math.round(state.totalCorrect / state.totalAnswered * 100) : 0;
+  var text = "I scored " + pct + "% on the KNOWN demo at Willow Creek CC! Try it: known.golf/demo";
+  if(navigator.share){
+    navigator.share({title:"KNOWN Score", text: text}).catch(function(){});
+  } else if(navigator.clipboard){
+    navigator.clipboard.writeText(text).then(function(){
+      alert("Score copied to clipboard!");
+    });
+  } else {
+    alert(text);
+  }
+}
+
+/* ===== ONBOARDING ===== */
+function startDemo(){
+  var name = document.getElementById("userName").value.trim();
+  if(!name){document.getElementById("userName").focus();return}
+  state.userName = name;
+  state.onboarded = true;
+  saveState();
+  document.getElementById("onboarding").style.display = "none";
+  nextQuiz();
+}
+
+/* ===== INIT ===== */
+(function init(){
+  if(state.onboarded){
+    document.getElementById("onboarding").style.display = "none";
+    nextQuiz();
+  }
+})();
+</script>
+</body>
+</html>

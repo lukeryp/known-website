@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#1a3c2a">
+<title>KNOWN — Oakland Hills Demo QR</title>
+<!-- QR code lib must load before init script -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--green:#1a3c2a;--gold:#c9a84c;--bg:#f5f2eb}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:#1a1a1a;min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem 1rem;text-align:center}
+.logo{font-size:2rem;font-weight:800;letter-spacing:4px;color:var(--green);margin-bottom:4px}
+.subtitle{font-size:0.75rem;color:#888;letter-spacing:2px;text-transform:uppercase;margin-bottom:0.5rem}
+.badge{display:inline-block;background:var(--gold);color:var(--green);padding:3px 12px;border-radius:12px;font-size:0.65rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:1.5rem}
+.qr-card{background:white;border-radius:20px;padding:2rem;box-shadow:0 4px 24px rgba(0,0,0,0.1);margin-bottom:1.5rem;display:inline-block}
+#qrcode canvas,#qrcode img{display:block}
+.url-label{font-size:0.85rem;color:#888;margin-top:1rem;font-weight:500}
+.url-val{font-size:1rem;font-weight:700;color:var(--green)}
+.open-btn{display:block;background:var(--green);color:white;padding:14px 32px;border-radius:12px;font-family:inherit;font-size:1rem;font-weight:700;text-decoration:none;letter-spacing:0.5px;margin:0 auto 0.75rem;max-width:280px}
+.open-btn:active{opacity:0.85}
+.back-link{font-size:0.8rem;color:#888;text-decoration:none;display:block}
+.back-link:hover{color:var(--green)}
+.footer{margin-top:3rem;font-size:0.7rem;color:#aaa;letter-spacing:1px;text-transform:uppercase}
+.gold{color:var(--gold)}
+</style>
+</head>
+<body>
+<div class="logo">KNOWN</div>
+<div class="subtitle">Oakland Hills Country Club</div>
+<div class="badge">Demo — Fictional Members</div>
+
+<div class="qr-card">
+  <div id="qrcode"></div>
+  <div class="url-label">Scan to open demo</div>
+  <div class="url-val">known.golf/demo</div>
+</div>
+
+<a class="open-btn" href="/demo">Open Demo →</a>
+<a class="back-link" href="/">← Back to Main App</a>
+
+<div class="footer">Member recognition training &middot; <span class="gold">Every name. Every time.</span></div>
+
+<script>
+new QRCode(document.getElementById('qrcode'), {
+  text: 'https://known.golf/demo',
+  width: 220,
+  height: 220,
+  colorDark: '#1a3c2a',
+  colorLight: '#ffffff',
+  correctLevel: QRCode.CorrectLevel.M
+});
+</script>
+</body>
+</html>
